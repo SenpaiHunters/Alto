@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		C4E36BE02DCEDCB200B049A3 /* Algorithms in Frameworks */ = {isa = PBXBuildFile; productRef = C4E36BDF2DCEDCB200B049A3 /* Algorithms */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		C4E36B5F2DCEB6C300B049A3 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -29,20 +33,23 @@
 		C4E36B682DCEB6C300B049A3 /* AltoUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AltoUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		C4E36BDD2DCEBAAC00B049A3 /* Exceptions for "Alto" folder in "Alto" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = C4E36B4C2DCEB6C200B049A3 /* Alto */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		C4E36B4F2DCEB6C200B049A3 /* Alto */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				C4E36BDD2DCEBAAC00B049A3 /* Exceptions for "Alto" folder in "Alto" target */,
+			);
 			path = Alto;
-			sourceTree = "<group>";
-		};
-		C4E36B612DCEB6C300B049A3 /* AltoTests */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = AltoTests;
-			sourceTree = "<group>";
-		};
-		C4E36B6B2DCEB6C300B049A3 /* AltoUITests */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = AltoUITests;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -52,6 +59,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C4E36BE02DCEDCB200B049A3 /* Algorithms in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -76,8 +84,6 @@
 			isa = PBXGroup;
 			children = (
 				C4E36B4F2DCEB6C200B049A3 /* Alto */,
-				C4E36B612DCEB6C300B049A3 /* AltoTests */,
-				C4E36B6B2DCEB6C300B049A3 /* AltoUITests */,
 				C4E36B4E2DCEB6C200B049A3 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -112,6 +118,7 @@
 			);
 			name = Alto;
 			packageProductDependencies = (
+				C4E36BDF2DCEDCB200B049A3 /* Algorithms */,
 			);
 			productName = Alto;
 			productReference = C4E36B4D2DCEB6C200B049A3 /* Alto.app */;
@@ -129,9 +136,6 @@
 			);
 			dependencies = (
 				C4E36B602DCEB6C300B049A3 /* PBXTargetDependency */,
-			);
-			fileSystemSynchronizedGroups = (
-				C4E36B612DCEB6C300B049A3 /* AltoTests */,
 			);
 			name = AltoTests;
 			packageProductDependencies = (
@@ -152,9 +156,6 @@
 			);
 			dependencies = (
 				C4E36B6A2DCEB6C300B049A3 /* PBXTargetDependency */,
-			);
-			fileSystemSynchronizedGroups = (
-				C4E36B6B2DCEB6C300B049A3 /* AltoUITests */,
 			);
 			name = AltoUITests;
 			packageProductDependencies = (
@@ -195,6 +196,9 @@
 			);
 			mainGroup = C4E36B442DCEB6C200B049A3;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				C4E36BDE2DCEDCB200B049A3 /* XCRemoteSwiftPackageReference "swift-algorithms" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = C4E36B4E2DCEB6C200B049A3 /* Products */;
 			projectDirPath = "";
@@ -396,11 +400,11 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_ASSET_PATHS = "\"Alto/Preview Content\"";
 				DEVELOPMENT_TEAM = 5TQWF3R63P;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Alto/Info.plist;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -423,11 +427,11 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_ASSET_PATHS = "\"Alto/Preview Content\"";
 				DEVELOPMENT_TEAM = 5TQWF3R63P;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Alto/Info.plist;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -549,6 +553,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		C4E36BDE2DCEDCB200B049A3 /* XCRemoteSwiftPackageReference "swift-algorithms" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/apple/swift-algorithms.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.2.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		C4E36BDF2DCEDCB200B049A3 /* Algorithms */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C4E36BDE2DCEDCB200B049A3 /* XCRemoteSwiftPackageReference "swift-algorithms" */;
+			productName = Algorithms;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = C4E36B452DCEB6C200B049A3 /* Project object */;
 }

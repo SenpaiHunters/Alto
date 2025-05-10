@@ -1,0 +1,130 @@
+// Code based on this video:
+// https://youtu.be/lsXqJKm4l-U?si=RxhoNdiyY2cruIUV
+
+import Algorithms
+import SwiftUI
+import UniformTypeIdentifiers
+
+/// Temporary View to test Drag and drop
+struct DragAndDropView: View {
+
+    /// stores the tab items for each drop zone
+    @State private var unpinnedTabs: [TabItem] = [
+        TabItem(id: UUID(), title: "Tab 1", favicon: ""),
+        TabItem(id: UUID(), title: "Tab 2", favicon: ""),
+    ]
+    @State private var pinnedTabs: [TabItem] = []
+    @State private var favoriteTabs: [TabItem] = []
+
+    /// used to detect when the drop zone is targeted and needs to display diferently
+    @State private var isUnpinnedTargeted: Bool = false
+    @State private var isPinnedTargeted: Bool = false
+    @State private var isFavoriteTargeted: Bool = false
+
+    var body: some View {
+        VStack {
+            DropZoneView(tabItems: unpinnedTabs, isTargeted: isUnpinnedTargeted)
+                .dropDestination(for: TabItem.self) { droppedTabs, location in
+
+                    /// this goes through each item from the dropped payload
+                    for tab in droppedTabs {
+                        pinnedTabs.removeAll(where: { $0 == tab })
+                        favoriteTabs.removeAll(where: { $0 == tab })
+                    }
+
+                    /// ensures there are no duplicates of the dropped tabs
+                    let allTabs = unpinnedTabs + droppedTabs
+                    unpinnedTabs = Array(allTabs.uniqued())
+                    return true
+                } isTargeted: { isTargeted in
+                    isUnpinnedTargeted = isTargeted
+                    print("Pinned zone targeted: \(isTargeted)")
+                }
+            DropZoneView(tabItems: pinnedTabs, isTargeted: isPinnedTargeted)
+                .dropDestination(for: TabItem.self) { droppedTabs, location in
+                    print(droppedTabs)
+                    /// this goes through each item from the dropped payload
+                    for tab in droppedTabs {
+                        unpinnedTabs.removeAll(where: { $0 == tab })
+                        favoriteTabs.removeAll(where: { $0 == tab })
+                    }
+
+                    /// ensures there are no duplicates of the dropped tabs
+                    let allTabs = pinnedTabs + droppedTabs
+                    pinnedTabs = Array(allTabs.uniqued())
+                    return true
+                } isTargeted: { isTargeted in
+                    isPinnedTargeted = isTargeted
+                    print("Pinned zone targeted: \(isTargeted)")
+                }
+            DropZoneView(tabItems: favoriteTabs, isTargeted: isFavoriteTargeted)
+                .dropDestination(for: TabItem.self) { droppedTabs, location in
+
+                    /// this goes through each item from the dropped payload
+                    for tab in droppedTabs {
+                        unpinnedTabs.removeAll(where: { $0 == tab })
+                        pinnedTabs.removeAll(where: { $0 == tab })
+                    }
+
+                    /// ensures there are no duplicates of the dropped tabs
+                    let allTabs = favoriteTabs + droppedTabs
+                    favoriteTabs = Array(allTabs.uniqued())
+                    return true
+                } isTargeted: { isTargeted in
+                    isFavoriteTargeted = isTargeted
+                    print("Pinned zone targeted: \(isTargeted)")
+                }
+        }
+    }
+}
+
+#Preview {
+    DragAndDropView()
+}
+
+/// The drop zone handles rendering the items within the zone
+struct DropZoneView: View {
+    let tabItems: [TabItem]
+    let isTargeted: Bool
+
+    var body: some View {
+        ZStack {
+            Rectangle()
+                .fill(isTargeted ? .red : .blue)
+
+            VStack {
+
+                // this renders each tab from tabItems that are given to the dropzone
+                ForEach(tabItems, id: \.id) { tab in
+                    Text(tab.title)
+                        .draggable(tab)
+                }
+            }
+        }
+        .frame(width: 150, height: 50)
+    }
+}
+
+/// A structure to store the tab data for drag and drop
+struct TabItem: Transferable, Codable, Comparable, Hashable {
+
+    var id: UUID
+    var title: String
+    var favicon: String
+
+    /// tells the struct it should be represented as the custom UTType .tabItem
+    static var transferRepresentation: some TransferRepresentation {
+        CodableRepresentation(contentType: .tabItem)
+    }
+
+    /// allows the tabs to be comparied with eachother based on ID
+    static func < (lhs: TabItem, rhs: TabItem) -> Bool {
+        return lhs.id == rhs.id
+    }
+}
+
+/// extentds the Unifide type identifier to add the tabItem structure
+extension UTType {
+    static let tabItem = UTType(exportedAs: "Alto-Browser.Alto.tabItem")
+    /// creates a exported type identiffier
+}
