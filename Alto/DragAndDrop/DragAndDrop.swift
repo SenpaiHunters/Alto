@@ -7,11 +7,11 @@ import UniformTypeIdentifiers
 
 /// Temporary View to test Drag and drop
 struct DragAndDropView: View {
-
+    @Environment(\.browser) private var browser
+    
     /// stores the tab items for each drop zone
     @State private var unpinnedTabs: [TabItem] = [
-        TabItem(id: UUID(), title: "Tab 1", favicon: ""),
-        TabItem(id: UUID(), title: "Tab 2", favicon: ""),
+        
     ]
     @State private var pinnedTabs: [TabItem] = []
     @State private var favoriteTabs: [TabItem] = []
@@ -21,6 +21,7 @@ struct DragAndDropView: View {
     @State private var isPinnedTargeted: Bool = false
     @State private var isFavoriteTargeted: Bool = false
 
+    
     var body: some View {
         VStack {
             DropZoneView(tabItems: unpinnedTabs, isTargeted: isUnpinnedTargeted)
@@ -29,7 +30,7 @@ struct DragAndDropView: View {
                     /// this goes through each item from the dropped payload
                     for tab in droppedTabs {
                         pinnedTabs.removeAll(where: { $0 == tab })
-                        favoriteTabs.removeAll(where: { $0 == tab })
+                        browser.favorites.removeAll(where: { $0 == tab })
                     }
 
                     /// ensures there are no duplicates of the dropped tabs
@@ -46,7 +47,7 @@ struct DragAndDropView: View {
                     /// this goes through each item from the dropped payload
                     for tab in droppedTabs {
                         unpinnedTabs.removeAll(where: { $0 == tab })
-                        favoriteTabs.removeAll(where: { $0 == tab })
+                        browser.favorites.removeAll(where: { $0 == tab })
                     }
 
                     /// ensures there are no duplicates of the dropped tabs
@@ -57,7 +58,7 @@ struct DragAndDropView: View {
                     isPinnedTargeted = isTargeted
                     print("Pinned zone targeted: \(isTargeted)")
                 }
-            DropZoneView(tabItems: favoriteTabs, isTargeted: isFavoriteTargeted)
+            DropZoneView(tabItems: browser.favorites, isTargeted: isFavoriteTargeted)
                 .dropDestination(for: TabItem.self) { droppedTabs, location in
 
                     /// this goes through each item from the dropped payload
@@ -67,8 +68,8 @@ struct DragAndDropView: View {
                     }
 
                     /// ensures there are no duplicates of the dropped tabs
-                    let allTabs = favoriteTabs + droppedTabs
-                    favoriteTabs = Array(allTabs.uniqued())
+                    let allTabs = browser.favorites + droppedTabs
+                    browser.favorites = Array(allTabs.uniqued())
                     return true
                 } isTargeted: { isTargeted in
                     isFavoriteTargeted = isTargeted
@@ -84,6 +85,8 @@ struct DragAndDropView: View {
 
 /// The drop zone handles rendering the items within the zone
 struct DropZoneView: View {
+    @Environment(\.browser) private var browser
+    
     let tabItems: [TabItem]
     let isTargeted: Bool
 
@@ -96,7 +99,7 @@ struct DropZoneView: View {
 
                 // this renders each tab from tabItems that are given to the dropzone
                 ForEach(tabItems, id: \.id) { tab in
-                    Text(tab.title)
+                    Text(browser.tabFromId(tab.id))
                         .draggable(tab)
                 }
             }
