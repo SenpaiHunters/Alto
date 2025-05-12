@@ -9,9 +9,8 @@ import SwiftUI
 import Observation
 import AppKit
 
-
+/// allows browser class to be accsesed in all views
 extension EnvironmentValues {
-    /// Provides access to the shared `Browser` instance in the SwiftUI environment.
     @Entry var browser: Browser = Browser()
 }
 
@@ -25,28 +24,27 @@ class Browser {
     /// Tabs are shared between all windows
     /// If tabs are held inside other tabs it requires recursion to find and deleat them
     /// this way all you need is an ID an you can look up the tab
-    var tabs: [Tab] = [Tab(title: "tab 1")]
+    var tabs: [TabItem] = []
     
-    /// Favorite tabs
     var favoritesId = UUID()
-    var favorites: [TabItem] = []
+    var favorites: [TabRepresentation] = []
     
-    /// Spaces
     var spaces: [String] = []
     
     init() {
+        print("Browser Init")
         /// Use a function to pull from a stored json
         self.windows = []
         /// Use a function to pull from a stored json
         self.tabs = []
         
-        self.tabs.append(Tab(title: "tab 1"))
-        self.tabs.append(Tab(title: "tab 2"))
-        self.tabs.append(Tab(title: "tab 3"))
+        /// this adds tabs on init for testing perposes
+        self.tabs.append(Tab(self))
+        
         
         /// for every tab object it creates a tab item that is dragable
-        for (index, tab) in tabs.enumerated() {
-            self.favorites.append(TabItem(id: tab.id, title: "Tab 0", favicon: ""))
+        for (_, tab) in tabs.enumerated() {
+            self.favorites.append(TabRepresentation(id: tab.id, title: "Tab 0", favicon: ""))
         }
 
        
@@ -65,16 +63,23 @@ class Browser {
     
     /// Gets a tab object from its ID
     func tabFromId(_ id: UUID) -> String {
+        print("Tab Id Call:", id)
         if let tab = tabs.first(where: { $0.id == id}) {
+            print(tab.title)
             return tab.title
         }
+        print("No tab found")
         return "No Tab Found"
     }
-}
-
-struct Tab: Identifiable {
-    var id: UUID = UUID()
-    var title: String
+    
+    func getWindow() -> Window {
+        return windows[windows.count - 1]
+    }
+    
+    func newWindow() {
+        self.windows.append(Window(manager: self))
+        print(windows)
+    }
 }
 
 /// This code comes from: https://blog.rampatra.com/how-to-open-a-new-window-in-swiftui
@@ -92,31 +97,12 @@ class WindowController<RootView: View>: NSWindowController {
 @Observable
 class Window {
     var id = UUID()
+    var title: String
     var manager: Browser  // uses the browser environment for managment
     
     init(manager: Browser) {
         self.manager = manager
-    }
-}
-
-/// This is a temporary window view for testing
-struct WindowView: View {
-    var window: Window /// takes window class for handling the view
-
-    var body: some View {
-        VStack {
-            Text(window.id.uuidString)
-            
-            /// Temporary button to test window system
-            Button {
-                window.manager.openNewWindow()
-            } label: {
-                Text("New Window")
-            }
-            
-            /// Temporary drag and drop view for testing
-            DragAndDropView()
-        }
+        self.title = ""
     }
 }
 

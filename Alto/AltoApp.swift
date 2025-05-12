@@ -12,14 +12,10 @@ struct AltoApp: App {
     var browser: Browser = Browser()
     
     var body: some Scene {
-        WindowGroup {
-            /// If at least 1 window exist it will use the first one for our starting window
+        WindowGroup(id: "browser") {
             /// This is so we can manage the starting window with the browser class
-            if let window = browser.windows.first {
-                WindowView(window: window)
-            }
+            WindowView(window: browser.getWindow())
         }
         .environment(\.browser, browser)
-        
     }
 }
