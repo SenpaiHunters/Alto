@@ -42,7 +42,7 @@ struct DragAndDropView: View {
                 }
             DropZoneView(tabItems: pinnedTabs, isTargeted: isPinnedTargeted)
                 .dropDestination(for: TabRepresentation.self) { droppedTabs, location in
-                    print(droppedTabs)
+                    
                     /// this goes through each item from the dropped payload
                     for tab in droppedTabs {
                         unpinnedTabs.removeAll(where: { $0 == tab })

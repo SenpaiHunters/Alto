@@ -63,12 +63,10 @@ class Browser {
     
     /// Gets a tab object from its ID
     func tabFromId(_ id: UUID) -> String {
-        print("Tab Id Call:", id)
         if let tab = tabs.first(where: { $0.id == id}) {
             print(tab.title)
             return tab.title
         }
-        print("No tab found")
         return "No Tab Found"
     }
     
