@@ -77,7 +77,13 @@ class Browser {
     }
     
     func newWindow() {
-        self.windows.append(Window(manager: self))
+        let win = Window(manager: self)
+        let hostingController = NSHostingController(rootView: WindowView(window: win).frame(width: 400, height: 400))
+        let window = NSWindow(contentViewController: hostingController)
+        window.setContentSize(NSSize(width: 400, height: 400))
+        window.orderFront(nil)
+        
+        self.windows.append(win)
         print(windows)
     }
 }

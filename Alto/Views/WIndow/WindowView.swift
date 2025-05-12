@@ -22,7 +22,7 @@ struct WindowView: View {
             /// Temporary button to test window system
             Button {
                 window.manager.newWindow()
-                openWindow(id: "browser")
+                //openWindow(id: "browser")
             } label: {
                 Text("New Window")
             }
