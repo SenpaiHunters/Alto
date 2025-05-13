@@ -30,7 +30,7 @@ struct DragAndDropView: View {
                     /// this goes through each item from the dropped payload
                     for tab in droppedTabs {
                         pinnedTabs.removeAll(where: { $0 == tab })
-                        browser.favorites.removeAll(where: { $0 == tab })
+                        browser.removeTab(tab: tab)
                     }
 
                     /// ensures there are no duplicates of the dropped tabs
@@ -46,7 +46,7 @@ struct DragAndDropView: View {
                     /// this goes through each item from the dropped payload
                     for tab in droppedTabs {
                         unpinnedTabs.removeAll(where: { $0 == tab })
-                        browser.favorites.removeAll(where: { $0 == tab })
+                        browser.removeTab(tab: tab)
                     }
 
                     /// ensures there are no duplicates of the dropped tabs
@@ -56,7 +56,7 @@ struct DragAndDropView: View {
                 } isTargeted: { isTargeted in
                     isPinnedTargeted = isTargeted
                 }
-            DropZoneView(tabItems: browser.favorites, isTargeted: isFavoriteTargeted)
+            DropZoneView(tabItems: browser.getTabs(), isTargeted: isFavoriteTargeted)
                 .dropDestination(for: TabRepresentation.self) { droppedTabs, location in
 
                     /// this goes through each item from the dropped payload
@@ -66,7 +66,7 @@ struct DragAndDropView: View {
                     }
 
                     /// ensures there are no duplicates of the dropped tabs
-                    let allTabs = browser.favorites + droppedTabs
+                    let allTabs = browser.getTabs() + droppedTabs
                     browser.favorites = Array(allTabs.uniqued())
                     return true
                 } isTargeted: { isTargeted in
@@ -96,6 +96,7 @@ struct DropZoneView: View {
 
                 // this renders each tab from tabItems that are given to the dropzone
                 ForEach(tabItems, id: \.id) { tab in
+                    Text(tab.id.uuidString)
                     Text(browser.tabFromId(tab.id))
                         .draggable(tab)
                 }
@@ -106,7 +107,7 @@ struct DropZoneView: View {
 }
 
 /// A structure to store the tab data for drag and drop
-struct TabRepresentation: Transferable, Codable, Comparable, Hashable {
+struct TabRepresentation: Transferable, Codable, Comparable, Hashable, Identifiable {
     var id: UUID
     var title: String
     var favicon: String

@@ -16,10 +16,11 @@ extension EnvironmentValues {
 
 /// This handles any data that needs to be shared across all windows and subviews
 @Observable
-class Browser {
+class Browser: Identifiable {
     /// this will keep track of browser windows
     var windows: [Window] = []
     
+    var id: UUID = UUID()
     /// holds all tab objects for reference via ID
     /// Tabs are shared between all windows
     /// If tabs are held inside other tabs it requires recursion to find and deleat them
@@ -54,13 +55,6 @@ class Browser {
         }
     }
     
-    /// Opens a new browser window with a WindowView
-    func openNewWindow() {
-        let windowController = WindowController(rootView: WindowView(window: Window(manager: self)))
-        windowController.window?.title = "Child Window \(1)"
-        windowController.showWindow(nil)
-    }
-    
     /// Gets a tab object from its ID
     func tabFromId(_ id: UUID) -> String {
         if let tab = tabs.first(where: { $0.id == id}) {
@@ -70,13 +64,33 @@ class Browser {
         return "No Tab Found"
     }
     
-    func getWindow() -> Window {
-        return windows[windows.count - 1]
+    func removeTab(tab: TabRepresentation) {
+        print(tab)
+        self.favorites.removeAll(where: { $0 == tab })
+    }
+    
+    func getTabs() -> [TabRepresentation] {
+        print("FAVS:", favorites)
+        print("browser id:", id)
+        return favorites
+    }
+    
+    func getWindow(id: UUID? = nil) -> Window {
+        if id == nil {
+            return windows[0]
+        } else {
+            let returnedWindow = windows.first(where: { $0.id == id})
+            return returnedWindow!
+        }
+        
     }
     
     func newWindow() {
         let win = Window(manager: self)
-        let hostingController = NSHostingController(rootView: WindowView(window: win).frame(width: 400, height: 400))
+        
+        /// IMPORTANT: while the window classes manager has the correct id unless you feed in the browser for the environment it will not use it properly and regenerate it
+        let hostingController = NSHostingController(rootView: WindowView(window: win).environment(\.browser, self).frame(width: 400, height: 400))
+        
         let window = NSWindow(contentViewController: hostingController)
         window.setContentSize(NSSize(width: 400, height: 400))
         window.orderFront(nil)
@@ -86,20 +100,9 @@ class Browser {
     }
 }
 
-/// This code comes from: https://blog.rampatra.com/how-to-open-a-new-window-in-swiftui
-/// Creates a new window with a view
-class WindowController<RootView: View>: NSWindowController {
-    convenience init(rootView: RootView) {
-        let hostingController = NSHostingController(rootView: rootView.frame(width: 400, height: 400))
-        let window = NSWindow(contentViewController: hostingController)
-        window.setContentSize(NSSize(width: 400, height: 400))
-        self.init(window: window)
-    }
-}
-
 /// This handles any window specific information like the specific space that is open, windows size and position
 @Observable
-class Window {
+class Window: Identifiable {
     var id = UUID()
     var title: String
     var manager: Browser  // uses the browser environment for managment

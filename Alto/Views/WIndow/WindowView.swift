@@ -10,7 +10,6 @@ import SwiftUI
 /// This is a temporary window view for testing
 struct WindowView: View {
     var window: Window /// takes window class for handling the view
-    @Environment(\.openWindow) private var openWindow
     
     var body: some View {
         
@@ -18,6 +17,7 @@ struct WindowView: View {
         VStack {
             Text(window.id.uuidString)
             Text(window.title)
+            Text(window.manager.id.uuidString)
             
             /// Temporary button to test window system
             Button {
@@ -25,6 +25,12 @@ struct WindowView: View {
                 //openWindow(id: "browser")
             } label: {
                 Text("New Window")
+            }
+            Button {
+                print(window.manager.favorites)
+                //openWindow(id: "browser")
+            } label: {
+                Text("Print Tabs")
             }
             /// Temporary drag and drop view for testing
             DragAndDropView()
