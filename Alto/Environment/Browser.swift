@@ -1,9 +1,3 @@
-//
-//  Browser.swift
-//  Alto
-//
-//  Created by Henson Liga on 5/9/25.
-//
 
 import SwiftUI
 import Observation
@@ -25,12 +19,16 @@ class Browser: Identifiable {
     /// Tabs are shared between all windows
     /// If tabs are held inside other tabs it requires recursion to find and deleat them
     /// this way all you need is an ID an you can look up the tab
-    var tabs: [TabItem] = []
+    public var tabs: [TabItem] = []
     
+    /// TODO: This should be refactored into a struct of some sort
     var favoritesId = UUID()
     var favorites: [TabRepresentation] = []
     
-    var spaces: [String] = []
+    var spaceIndex: Int = 0
+    var spaces: [Space] = []
+    
+    var activeTab: TabRepresentation? = nil
     
     init() {
         print("Browser Init")
@@ -39,39 +37,57 @@ class Browser: Identifiable {
         /// Use a function to pull from a stored json
         self.tabs = []
         
-        /// this adds tabs on init for testing perposes
-        self.tabs.append(Tab(self))
-        
-        
-        /// for every tab object it creates a tab item that is dragable
-        for (_, tab) in tabs.enumerated() {
-            self.favorites.append(TabRepresentation(id: tab.id, title: "Tab 0", favicon: ""))
-        }
+        self.spaces = [
+            Space(manager: self),
+            Space(manager: self)
+        ]
 
-       
         /// In the case there are no windows pulled from memory it will make a new one
         if self.windows.count < 1 {
             self.windows.append(Window(manager: self))
         }
+        
+        if getSpace().unpinned.count > 0 {
+            self.activeTab = getSpace().unpinned[0]
+        }
+    }
+    
+    func newTab(_ url: String = "https://www.google.com/") {
+        let newTab = Tab(self, url: URL(string: url))
+        let newTabRepresentation = TabRepresentation(id: newTab.id, title: "Tab 0", favicon: "")
+        self.tabs.append(newTab)
+        self.getSpace().unpinned.append(newTabRepresentation)
+        self.activeTab = newTabRepresentation
+    }
+    
+    /// TODO: make this actualy work
+    func getSpace() -> Space {
+        return spaces[spaceIndex]
     }
     
     /// Gets a tab object from its ID
-    func tabFromId(_ id: UUID) -> String {
+    func tabFromId(_ id: UUID) -> WebViewManager? {
         if let tab = tabs.first(where: { $0.id == id}) {
-            print(tab.title)
-            return tab.title
+            if let tab = tab as? Tab {
+                return tab.webviewManager
+            }
         }
-        return "No Tab Found"
+        return nil
     }
     
+    /// This will eventualy remove the tab from each location
     func removeTab(tab: TabRepresentation) {
-        print(tab)
+        self.getSpace().removeTab(tab: tab)
         self.favorites.removeAll(where: { $0 == tab })
     }
     
-    func getTabs() -> [TabRepresentation] {
-        print("FAVS:", favorites)
-        print("browser id:", id)
+    /// gets tabs based on a dropzones Ids
+    func getTabs(id: UUID) -> [TabRepresentation] {
+        if id == self.getSpace().pinnedId {
+            return self.getSpace().pinned
+        } else if id == self.getSpace().unpinnedId {
+            return self.getSpace().unpinned
+        }
         return favorites
     }
     
@@ -82,7 +98,16 @@ class Browser: Identifiable {
             let returnedWindow = windows.first(where: { $0.id == id})
             return returnedWindow!
         }
-        
+    }
+    
+    func setTabArray(_ id: UUID, tabs: [TabRepresentation]) {
+        if id == self.getSpace().pinnedId {
+             self.getSpace().pinned  = tabs
+        } else if id == self.getSpace().unpinnedId {
+             self.getSpace().unpinned  = tabs
+        } else {
+            favorites = tabs
+        }
     }
     
     func newWindow() {
@@ -100,16 +125,27 @@ class Browser: Identifiable {
     }
 }
 
-/// This handles any window specific information like the specific space that is open, windows size and position
 @Observable
-class Window: Identifiable {
+class Space: Identifiable {
     var id = UUID()
     var title: String
-    var manager: Browser  // uses the browser environment for managment
+    var manager: Browser
+    
+    var pinnedId = UUID()
+    var pinned: [TabRepresentation] = []
+    
+    var unpinnedId = UUID()
+    var unpinned: [TabRepresentation] = []
     
     init(manager: Browser) {
         self.manager = manager
         self.title = ""
     }
+    
+    func removeTab(tab: TabRepresentation) {
+        self.pinned.removeAll(where: { $0 == tab })
+        self.unpinned.removeAll(where: { $0 == tab })
+    }
 }
+
 

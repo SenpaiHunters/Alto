@@ -1,39 +1,30 @@
-//
-//  WindowView.swift
-//  Alto
-//
-//  Created by Henson Liga on 5/10/25.
-//
+
 import SwiftUI
+import Observation
 
+/// This handles any window specific information like the specific space that is open, windows size and position
+@Observable
+class Window: Identifiable {
+    var id = UUID()
+    var title: String
+    var manager: Browser  // uses the browser environment for managment
+    var state: States = .topbar
+    
+    enum States {
+        case sidebar, topbar
+    }
+    
+    init(manager: Browser) {
+        self.manager = manager
+        self.title = ""
+    }
+}
 
-/// This is a temporary window view for testing
 struct WindowView: View {
+    @Environment(\.browser) private var browser
     var window: Window /// takes window class for handling the view
     
     var body: some View {
-        
-        
-        VStack {
-            Text(window.id.uuidString)
-            Text(window.title)
-            Text(window.manager.id.uuidString)
-            
-            /// Temporary button to test window system
-            Button {
-                window.manager.newWindow()
-                //openWindow(id: "browser")
-            } label: {
-                Text("New Window")
-            }
-            Button {
-                print(window.manager.favorites)
-                //openWindow(id: "browser")
-            } label: {
-                Text("Print Tabs")
-            }
-            /// Temporary drag and drop view for testing
-            DragAndDropView()
-        }
+        BrowserView(BrowserViewModel(browser: browser, window: window))
     }
 }

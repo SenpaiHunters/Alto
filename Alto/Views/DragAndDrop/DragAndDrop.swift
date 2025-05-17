@@ -4,103 +4,86 @@
 import Algorithms
 import SwiftUI
 import UniformTypeIdentifiers
+import Observation
 
-/// Temporary View to test Drag and drop
-struct DragAndDropView: View {
-    @Environment(\.browser) private var browser
+@Observable
+class DragAndDropViewModel {
+    var browser: Browser
+    var containerId: UUID
+    var window: Window
     
-    /// stores the tab items for each drop zone
-    @State private var unpinnedTabs: [TabRepresentation] = [
-        
-    ]
-    @State private var pinnedTabs: [TabRepresentation] = []
-    @State private var favoriteTabs: [TabRepresentation] = []
-
-    /// used to detect when the drop zone is targeted and needs to display diferently
-    @State private var isUnpinnedTargeted: Bool = false
-    @State private var isPinnedTargeted: Bool = false
-    @State private var isFavoriteTargeted: Bool = false
-
+    init(browser: Browser, window: Window, containerId: UUID) {
+        self.browser = browser
+        self.containerId = containerId
+        self.window = window
+    }
     
-    var body: some View {
-        VStack {
-            DropZoneView(tabItems: unpinnedTabs, isTargeted: isUnpinnedTargeted)
-                .dropDestination(for: TabRepresentation.self) { droppedTabs, location in
-
-                    /// this goes through each item from the dropped payload
-                    for tab in droppedTabs {
-                        pinnedTabs.removeAll(where: { $0 == tab })
-                        browser.removeTab(tab: tab)
-                    }
-
-                    /// ensures there are no duplicates of the dropped tabs
-                    let allTabs = unpinnedTabs + droppedTabs
-                    unpinnedTabs = Array(allTabs.uniqued())
-                    return true
-                } isTargeted: { isTargeted in
-                    isUnpinnedTargeted = isTargeted
-                }
-            DropZoneView(tabItems: pinnedTabs, isTargeted: isPinnedTargeted)
-                .dropDestination(for: TabRepresentation.self) { droppedTabs, location in
-                    
-                    /// this goes through each item from the dropped payload
-                    for tab in droppedTabs {
-                        unpinnedTabs.removeAll(where: { $0 == tab })
-                        browser.removeTab(tab: tab)
-                    }
-
-                    /// ensures there are no duplicates of the dropped tabs
-                    let allTabs = pinnedTabs + droppedTabs
-                    pinnedTabs = Array(allTabs.uniqued())
-                    return true
-                } isTargeted: { isTargeted in
-                    isPinnedTargeted = isTargeted
-                }
-            DropZoneView(tabItems: browser.getTabs(), isTargeted: isFavoriteTargeted)
-                .dropDestination(for: TabRepresentation.self) { droppedTabs, location in
-
-                    /// this goes through each item from the dropped payload
-                    for tab in droppedTabs {
-                        unpinnedTabs.removeAll(where: { $0 == tab })
-                        pinnedTabs.removeAll(where: { $0 == tab })
-                    }
-
-                    /// ensures there are no duplicates of the dropped tabs
-                    let allTabs = browser.getTabs() + droppedTabs
-                    browser.favorites = Array(allTabs.uniqued())
-                    return true
-                } isTargeted: { isTargeted in
-                    isFavoriteTargeted = isTargeted
-                }
+    func onDrop(droppedTabs: [TabRepresentation], location: CGPoint) -> Bool {
+        /// this goes through each item from the dropped payload
+        for tab in droppedTabs {
+            browser.removeTab(tab: tab)
         }
+
+        /// ensures there are no duplicates of the dropped tabs
+        let allTabs = browser.getTabs(id: containerId) + droppedTabs
+        browser.setTabArray(containerId, tabs:Array(allTabs.uniqued()))
+        return true
     }
 }
 
-#Preview {
-    DragAndDropView()
+
+struct DragAndDropView: View {
+    @State var isZoneTargeted: Bool = false
+    var model: DragAndDropViewModel
+    
+    init(_ model: DragAndDropViewModel) {
+        self.model = model
+    }
+    
+    var body: some View {
+        DropZoneView(window: model.window, tabItems: model.browser.getTabs(id: model.containerId), isTargeted: isZoneTargeted)
+            .dropDestination(for: TabRepresentation.self) { droppedTabs, location in
+                model.onDrop(droppedTabs: droppedTabs, location: location)
+            } isTargeted: { isTargeted in
+                isZoneTargeted = isTargeted
+            }
+    }
 }
+
 
 /// The drop zone handles rendering the items within the zone
 struct DropZoneView: View {
     @Environment(\.browser) private var browser
-    
-    let tabItems: [TabRepresentation]
-    let isTargeted: Bool
+    var window: Window
+    var tabItems: [TabRepresentation]
+    @State var isTargeted: Bool = false
 
     var body: some View {
         ZStack {
             Rectangle()
                 .fill(isTargeted ? .red : .blue)
 
-            VStack {
+            if window.state == .topbar {
+                HStack {
+                    // this renders each tab from tabItems that are given to the dropzone
+                    ForEach(tabItems, id: \.id) { tabItem in
+                        if let tab = browser.tabFromId(tabItem.id), let title = tab.title {
+                            TabView(TabViewModel(manager: browser, tab: tabItem, title: title))
+                        }
+                    }
+                }
+            } else {
+                VStack {
 
-                // this renders each tab from tabItems that are given to the dropzone
-                ForEach(tabItems, id: \.id) { tab in
-                    Text(tab.id.uuidString)
-                    Text(browser.tabFromId(tab.id))
-                        .draggable(tab)
+                    // this renders each tab from tabItems that are given to the dropzone
+                    ForEach(tabItems, id: \.id) { tabItem in
+                        if let tab = browser.tabFromId(tabItem.id), let title = tab.title {
+                            TabView(TabViewModel(manager: browser, tab: tabItem, title: title))
+                        }
+                    }
                 }
             }
+            
         }
         .frame(width: 150, height: 50)
     }
@@ -128,3 +111,5 @@ extension UTType {
     static let tabItem = UTType(exportedAs: "Alto-Browser.Alto.tabItem")
     /// creates a exported type identiffier
 }
+
+

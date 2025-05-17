@@ -1,9 +1,3 @@
-//
-//  TabsModel.swift
-//  Alto
-//
-//  Created by Henson Liga on 5/10/25.
-//
 
 import SwiftUI
 
@@ -38,14 +32,14 @@ class TabItem: Identifiable, Comparable {
 /// Normal Tab
 class Tab: TabItem {
     var url: URL
+    var webviewManager: WebViewManager
     
     init(_ manager: Browser, url: URL? = nil) {
-        if let url = url {
-            self.url = url
-        } else {
-            self.url = URL(string: "https://www.google.com/")!
-        }
+        let resolvedURL = url ?? URL(string: "https://www.google.com/")!
+        self.url = resolvedURL
+        self.webviewManager = WebViewManager(manager: manager, url: resolvedURL.absoluteString)
         super.init(manager)
+        
     }
 }
 
