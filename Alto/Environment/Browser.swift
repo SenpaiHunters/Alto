@@ -30,6 +30,10 @@ class Browser: Identifiable {
     
     var activeTab: TabRepresentation? = nil
     
+    enum TabTypes {
+        case tab, folder, splitview, group, favorite
+    }
+    
     init() {
         print("Browser Init")
         /// Use a function to pull from a stored json
@@ -54,10 +58,19 @@ class Browser: Identifiable {
     
     func newTab(_ url: String = "https://www.google.com/") {
         let newTab = Tab(self, url: URL(string: url))
-        let newTabRepresentation = TabRepresentation(id: newTab.id, title: "Tab 0", favicon: "")
+        let newTabRepresentation = TabRepresentation(id: newTab.id, title: "Tab 0", favicon: "", url: newTab.url.absoluteString)
         self.tabs.append(newTab)
         self.getSpace().unpinned.append(newTabRepresentation)
         self.activeTab = newTabRepresentation
+        print("New Tab!")
+    }
+    
+    func newTab(_ tab: Tab) {
+        let newTabRepresentation = TabRepresentation(id: tab.id, title: "Tab 0", favicon: "", url: tab.url.absoluteString)
+        self.tabs.append(tab)
+        self.getSpace().unpinned.append(newTabRepresentation)
+        self.activeTab = newTabRepresentation
+        print("New Tab!")
     }
     
     /// TODO: make this actualy work
@@ -123,29 +136,26 @@ class Browser: Identifiable {
         self.windows.append(win)
         print(windows)
     }
-}
-
-@Observable
-class Space: Identifiable {
-    var id = UUID()
-    var title: String
-    var manager: Browser
     
-    var pinnedId = UUID()
-    var pinned: [TabRepresentation] = []
-    
-    var unpinnedId = UUID()
-    var unpinned: [TabRepresentation] = []
-    
-    init(manager: Browser) {
-        self.manager = manager
-        self.title = ""
+    func convertTab(id: [UUID], to tab: TabTypes) {
+        switch tab {
+        case .favorite:
+            // if its a group then no
+            // if its a
+            print("favorite")
+        case .folder:
+            print("folder")
+        case .group:
+            print("group")
+        case .splitview:
+            print("splitview")
+        case .tab:
+            print("tab")
+        }
+        
+        let newTab = Tab(self)
+        self.newTab(newTab)
+        // remove existing tabs from id Array
+        // create a new tab
     }
-    
-    func removeTab(tab: TabRepresentation) {
-        self.pinned.removeAll(where: { $0 == tab })
-        self.unpinned.removeAll(where: { $0 == tab })
-    }
 }
-
-

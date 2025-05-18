@@ -6,14 +6,17 @@ import Observation
 class TabItemViewModel {
     var manager: Browser
     var favicon: Image = Image(systemName: "square")
-    var title: String = ""
+    var title: String
     var tab: TabRepresentation
     
-    init(_ manager: Browser, tab: TabRepresentation, title: String = "") {
+    init(_ manager: Browser, tab: TabRepresentation, title: String = "Untitled") {
         self.manager = manager
         self.tab = tab
-        ///self.favicon =
-        self.title = title
+        if title != "" {
+            self.title = title
+        } else {
+            self.title = manager.tabFromId(tab.id)?.url?.absoluteString ?? "Failed"
+        }
     }
     
     func handleSingleClick() {
@@ -42,7 +45,11 @@ struct TabView: View {
     
     var body: some View {
         Text(model.title)
-            .draggable(model.tab)
+            .padding()
+            .background(
+                Rectangle()
+                    .fill(.red)
+            )
             .gesture(
                 TapGesture(count: 2).onEnded {
                     model.handleDoubleClick()
@@ -53,5 +60,6 @@ struct TabView: View {
                     model.handleSingleClick()
                 }
             )
+            .draggable(model.tab)
     }
 }

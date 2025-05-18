@@ -1,7 +1,5 @@
 //
 
-
-
 import Observation
 import SwiftUI
 import WebKit
@@ -60,6 +58,7 @@ class WebViewManager: NSObject, WKNavigationDelegate, WKUIDelegate, Identifiable
     func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
         print("STARTED LOADING")
         self.isLoading = false
+        self.url = webView.url
     }
 
     func webView(_ webView: WKWebView,
@@ -69,7 +68,7 @@ class WebViewManager: NSObject, WKNavigationDelegate, WKUIDelegate, Identifiable
         if navigationAction.targetFrame == nil {
             print("🆕 New tab or window requested: \(navigationAction.request.url?.absoluteString ?? "unknown URL")")
             if let url = navigationAction.request.url?.absoluteString {
-                self.mannager.newTab()
+                self.mannager.newTab(url)
             }
         }
         return nil

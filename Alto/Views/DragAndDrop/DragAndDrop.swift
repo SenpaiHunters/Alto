@@ -92,8 +92,9 @@ struct DropZoneView: View {
 /// A structure to store the tab data for drag and drop
 struct TabRepresentation: Transferable, Codable, Comparable, Hashable, Identifiable {
     var id: UUID
-    var title: String
-    var favicon: String
+    var title: String = "unloaded"
+    var favicon: String = "square"
+    var url: String
 
     /// tells the struct it should be represented as the custom UTType .tabItem
     static var transferRepresentation: some TransferRepresentation {

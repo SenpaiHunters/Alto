@@ -80,10 +80,22 @@ class Group: TabItem {
 class Favorite: TabItem {
     var url: URL
     var baseURL: URL
+    var webviewManager: WebViewManager
     
-    init(_ manager: Browser, baseURL: URL) {
-        self.url = baseURL
-        self.baseURL = baseURL
+    init(_ manager: Browser, url: URL? = nil) {
+        let resolvedURL = url ?? URL(string: "https://www.google.com/")!
+        self.url = resolvedURL
+        self.baseURL = resolvedURL
+        self.webviewManager = WebViewManager(manager: manager, url: resolvedURL.absoluteString)
         super.init(manager)
     }
+}
+
+
+protocol Pinnable {
+    // add functions to conform to protocall
+}
+
+protocol Favoriteable {
+    // add functions to conform to protocall
 }

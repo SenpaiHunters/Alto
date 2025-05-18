@@ -1,5 +1,4 @@
 import SwiftUI
-import SwiftData
 import Observation
 
 /// Manages the Browser View
@@ -53,56 +52,8 @@ struct BrowserView: View {
                 }
                 .padding(5)
             }
-        }
-    }
-}
-
-struct SidebarView: View {
-    @Environment(\.browser) private var browser
-    var window: Window
-    
-    var body: some View {
-        VStack {
-            /// The drop areas for the tabs
-            DragAndDropView(DragAndDropViewModel(browser: browser, window: window, containerId: browser.favoritesId))
-            DragAndDropView(DragAndDropViewModel(browser: browser, window: window, containerId: browser.getSpace().pinnedId))
-            DragAndDropView(DragAndDropViewModel(browser: browser, window: window, containerId: browser.getSpace().unpinnedId))
-            Spacer()
-            
-            Button {
-                browser.newTab()
-            } label: {
-                Text("New Tab")
-            }
-            Button {
-                window.state = .topbar
-            } label: {
-                Text("toggle")
-            }
-        }
-    }
-}
-
-struct TopbarView: View {
-    @Environment(\.browser) private var browser
-    var window: Window
-    
-    var body: some View {
-        HStack {
-            DragAndDropView(DragAndDropViewModel(browser: browser, window: window, containerId: browser.favoritesId))
-            DragAndDropView(DragAndDropViewModel(browser: browser, window: window, containerId: browser.getSpace().pinnedId))
-            DragAndDropView(DragAndDropViewModel(browser: browser, window: window, containerId: browser.getSpace().unpinnedId))
-            Spacer()
-            
-            Button {
-                browser.newTab()
-            } label: {
-                Text("New Tab")
-            }
-            Button {
-                window.state = .sidebar
-            } label: {
-                Text("toggle")
+            .onAppear {
+                model.browser.convertTab(id: [UUID()], to: .splitview)
             }
         }
     }
