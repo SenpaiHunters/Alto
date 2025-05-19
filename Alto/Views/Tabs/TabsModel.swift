@@ -39,7 +39,6 @@ class Tab: TabItem {
         self.url = resolvedURL
         self.webviewManager = WebViewManager(manager: manager, url: resolvedURL.absoluteString)
         super.init(manager)
-        
     }
 }
 
@@ -92,10 +91,16 @@ class Favorite: TabItem {
 }
 
 
+enum TabState {
+    case unpinned, pinned, favorited
+}
+
 protocol Pinnable {
+    var state: TabState { get set }
     // add functions to conform to protocall
 }
 
 protocol Favoriteable {
+    var state: TabState { get set }
     // add functions to conform to protocall
 }

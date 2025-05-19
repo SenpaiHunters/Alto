@@ -68,7 +68,7 @@ class WebViewManager: NSObject, WKNavigationDelegate, WKUIDelegate, Identifiable
         if navigationAction.targetFrame == nil {
             print("🆕 New tab or window requested: \(navigationAction.request.url?.absoluteString ?? "unknown URL")")
             if let url = navigationAction.request.url?.absoluteString {
-                self.mannager.newTab(url)
+                self.mannager.newTab(url, window: self.mannager.getWindow())
             }
         }
         return nil

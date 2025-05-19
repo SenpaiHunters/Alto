@@ -8,8 +8,9 @@ class TabItemViewModel {
     var favicon: Image = Image(systemName: "square")
     var title: String
     var tab: TabRepresentation
+    var window: Window
     
-    init(_ manager: Browser, tab: TabRepresentation, title: String = "Untitled") {
+    init(_ manager: Browser, window: Window, tab: TabRepresentation, title: String = "Untitled") {
         self.manager = manager
         self.tab = tab
         if title != "" {
@@ -17,10 +18,11 @@ class TabItemViewModel {
         } else {
             self.title = manager.tabFromId(tab.id)?.url?.absoluteString ?? "Failed"
         }
+        self.window = window
     }
     
     func handleSingleClick() {
-        self.manager.activeTab = self.tab
+        self.manager.getWindow().activeTab = self.tab
         print("Tab Clicked")
     }
     
@@ -31,8 +33,8 @@ class TabItemViewModel {
 
 class TabViewModel: TabItemViewModel {
     
-    init(manager: Browser, tab: TabRepresentation, title: String = "") {
-        super.init(manager, tab: tab, title:title)
+    init(manager: Browser, window: Window, tab: TabRepresentation, title: String = "") {
+        super.init(manager,window: window, tab: tab, title:title)
     }
 }
 

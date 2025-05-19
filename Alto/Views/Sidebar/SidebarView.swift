@@ -12,13 +12,14 @@ struct SidebarView: View {
     var body: some View {
         VStack {
             /// The drop areas for the tabs
+            Text(window.id.uuidString)
             DragAndDropView(DragAndDropViewModel(browser: browser, window: window, containerId: browser.favoritesId))
             DragAndDropView(DragAndDropViewModel(browser: browser, window: window, containerId: browser.getSpace().pinnedId))
             DragAndDropView(DragAndDropViewModel(browser: browser, window: window, containerId: browser.getSpace().unpinnedId))
             Spacer()
             
             Button {
-                browser.newTab()
+                browser.newTab(window:window)
             } label: {
                 Text("New Tab")
             }
@@ -26,6 +27,11 @@ struct SidebarView: View {
                 window.state = .topbar
             } label: {
                 Text("toggle")
+            }
+            Button {
+                browser.newWindow()
+            } label: {
+                Text("new window")
             }
         }
     }

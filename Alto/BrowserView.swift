@@ -37,7 +37,7 @@ struct BrowserView: View {
 
                 /// Gets webview from active tab
                 ZStack {
-                    if let id = model.browser.activeTab {
+                    if let id = model.window.activeTab {
                         if let webManager = model.browser.tabFromId(id.id) {
                             WebView(webViewMannager: webManager)
                                 .id(id)
@@ -51,9 +51,6 @@ struct BrowserView: View {
                     }
                 }
                 .padding(5)
-            }
-            .onAppear {
-                model.browser.convertTab(id: [UUID()], to: .splitview)
             }
         }
     }

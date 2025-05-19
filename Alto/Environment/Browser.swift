@@ -13,6 +13,7 @@ extension EnvironmentValues {
 class Browser: Identifiable {
     /// this will keep track of browser windows
     var windows: [Window] = []
+    var activeWindow: UUID?
     
     var id: UUID = UUID()
     /// holds all tab objects for reference via ID
@@ -28,14 +29,11 @@ class Browser: Identifiable {
     var spaceIndex: Int = 0
     var spaces: [Space] = []
     
-    var activeTab: TabRepresentation? = nil
-    
     enum TabTypes {
         case tab, folder, splitview, group, favorite
     }
     
     init() {
-        print("Browser Init")
         /// Use a function to pull from a stored json
         self.windows = []
         /// Use a function to pull from a stored json
@@ -50,26 +48,22 @@ class Browser: Identifiable {
         if self.windows.count < 1 {
             self.windows.append(Window(manager: self))
         }
-        
-        if getSpace().unpinned.count > 0 {
-            self.activeTab = getSpace().unpinned[0]
-        }
     }
     
-    func newTab(_ url: String = "https://www.google.com/") {
+    func newTab(_ url: String = "https://www.google.com/", window: Window) {
         let newTab = Tab(self, url: URL(string: url))
         let newTabRepresentation = TabRepresentation(id: newTab.id, title: "Tab 0", favicon: "", url: newTab.url.absoluteString)
         self.tabs.append(newTab)
         self.getSpace().unpinned.append(newTabRepresentation)
-        self.activeTab = newTabRepresentation
+        window.activeTab = newTabRepresentation
         print("New Tab!")
     }
     
-    func newTab(_ tab: Tab) {
+    func newTab(_ tab: Tab, window: Window) {
         let newTabRepresentation = TabRepresentation(id: tab.id, title: "Tab 0", favicon: "", url: tab.url.absoluteString)
         self.tabs.append(tab)
         self.getSpace().unpinned.append(newTabRepresentation)
-        self.activeTab = newTabRepresentation
+        window.activeTab = newTabRepresentation
         print("New Tab!")
     }
     
@@ -104,13 +98,19 @@ class Browser: Identifiable {
         return favorites
     }
     
+    /// Gets the currently active window unless ID is specified
     func getWindow(id: UUID? = nil) -> Window {
         if id == nil {
-            return windows[0]
+            let window = windows.first(where: { $0.id == activeWindow })
+            if let window = window {
+                print("window found", window.id)
+                return window
+            }
         } else {
             let returnedWindow = windows.first(where: { $0.id == id})
             return returnedWindow!
         }
+        return windows[0]
     }
     
     func setTabArray(_ id: UUID, tabs: [TabRepresentation]) {
@@ -127,10 +127,11 @@ class Browser: Identifiable {
         let win = Window(manager: self)
         
         /// IMPORTANT: while the window classes manager has the correct id unless you feed in the browser for the environment it will not use it properly and regenerate it
-        let hostingController = NSHostingController(rootView: WindowView(window: win).environment(\.browser, self).frame(width: 400, height: 400))
+        let hostingController = NSHostingController(rootView: WindowView(window: win).environment(\.browser, self).frame(width: 800, height: 500))
         
         let window = NSWindow(contentViewController: hostingController)
-        window.setContentSize(NSSize(width: 400, height: 400))
+        win.nsWindow = window
+        window.setContentSize(NSSize(width: 800, height: 500))
         window.orderFront(nil)
         
         self.windows.append(win)
@@ -154,7 +155,7 @@ class Browser: Identifiable {
         }
         
         let newTab = Tab(self)
-        self.newTab(newTab)
+        //self.newTab(newTab)
         // remove existing tabs from id Array
         // create a new tab
     }

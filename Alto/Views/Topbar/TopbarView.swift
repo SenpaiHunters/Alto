@@ -11,13 +11,14 @@ struct TopbarView: View {
     
     var body: some View {
         HStack {
+            Text(window.id.uuidString)
             DragAndDropView(DragAndDropViewModel(browser: browser, window: window, containerId: browser.favoritesId))
             DragAndDropView(DragAndDropViewModel(browser: browser, window: window, containerId: browser.getSpace().pinnedId))
             DragAndDropView(DragAndDropViewModel(browser: browser, window: window, containerId: browser.getSpace().unpinnedId))
             Spacer()
             
             Button {
-                browser.newTab()
+                browser.newTab(window: window)
             } label: {
                 Text("New Tab")
             }
@@ -25,6 +26,11 @@ struct TopbarView: View {
                 window.state = .sidebar
             } label: {
                 Text("toggle")
+            }
+            Button {
+                browser.newWindow()
+            } label: {
+                Text("new window")
             }
         }
     }

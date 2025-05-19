@@ -68,7 +68,7 @@ struct DropZoneView: View {
                     // this renders each tab from tabItems that are given to the dropzone
                     ForEach(tabItems, id: \.id) { tabItem in
                         if let tab = browser.tabFromId(tabItem.id), let title = tab.title {
-                            TabView(TabViewModel(manager: browser, tab: tabItem, title: title))
+                            TabView(TabViewModel(manager: browser,window:window, tab: tabItem, title: title))
                         }
                     }
                 }
@@ -78,7 +78,7 @@ struct DropZoneView: View {
                     // this renders each tab from tabItems that are given to the dropzone
                     ForEach(tabItems, id: \.id) { tabItem in
                         if let tab = browser.tabFromId(tabItem.id), let title = tab.title {
-                            TabView(TabViewModel(manager: browser, tab: tabItem, title: title))
+                            TabView(TabViewModel(manager: browser,window:window, tab: tabItem, title: title))
                         }
                     }
                 }
