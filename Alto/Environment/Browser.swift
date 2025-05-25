@@ -35,6 +35,7 @@ class Browser: Identifiable {
     }
     
     init() {
+        
         /// Use a function to pull from a stored json
         self.windows = []
         /// Use a function to pull from a stored json
