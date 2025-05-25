@@ -414,6 +414,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "Alto-Browser.Alto";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = /Users/hensonliga/Development/AltoBrowser/Alto/Alto/ObjCBridge/Header.h;
 				SWIFT_VERSION = 5.0;
 			};
 			name = Debug;
@@ -441,6 +442,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "Alto-Browser.Alto";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = /Users/hensonliga/Development/AltoBrowser/Alto/Alto/ObjCBridge/Header.h;
 				SWIFT_VERSION = 5.0;
 			};
 			name = Release;

@@ -2,6 +2,7 @@
 import SwiftUI
 import Observation
 import AppKit
+import WebKit
 
 /// allows browser class to be accsesed in all views
 extension EnvironmentValues {
@@ -14,7 +15,7 @@ class Browser: Identifiable {
     /// this will keep track of browser windows
     var windows: [Window] = []
     var activeWindow: UUID?
-    
+#warning("FIX IT SO WHEN A WINDOW IS CLOSED IT IS REMOVED FROM THE WINDOWS ARRAY")
     var id: UUID = UUID()
     /// holds all tab objects for reference via ID
     /// Tabs are shared between all windows
@@ -48,6 +49,13 @@ class Browser: Identifiable {
         if self.windows.count < 1 {
             self.windows.append(Window(manager: self))
         }
+        self.setCrossSiteTracking(enabled: false)
+    }
+    
+    func setCrossSiteTracking(enabled: Bool) {
+        print("THIS RAN!!!!!!!!!!", enabled)
+        WKWebsiteDataStore.nonPersistent()._setResourceLoadStatisticsEnabled(enabled)
+        WKWebsiteDataStore.default()._setResourceLoadStatisticsEnabled(enabled)
     }
     
     func newTab(_ url: String = "https://www.google.com/", window: Window) {
@@ -138,24 +146,34 @@ class Browser: Identifiable {
         print(windows)
     }
     
-    func convertTab(id: [UUID], to tab: TabTypes) {
-        switch tab {
-        case .favorite:
-            // if its a group then no
-            // if its a
-            print("favorite")
-        case .folder:
-            print("folder")
-        case .group:
-            print("group")
-        case .splitview:
-            print("splitview")
-        case .tab:
-            print("tab")
+    func convertTab(ids: [UUID], to tab: TabTypes) -> [TabItem]? {
+        let returnedTab: TabItem
+        
+        for id in ids {
+            tabs.removeAll(where: { $0.id == id })
         }
         
-        let newTab = Tab(self)
-        //self.newTab(newTab)
+        let firstTab = tabFromId(ids[0])
+        
+        switch tab {
+        case .favorite:
+            /// takes: a tab and a favorite
+            
+            returnedTab = Favorite(self, url: firstTab?.url?.absoluteURL)
+        case .folder:
+            returnedTab = Folder(self, childrenIds: ids)
+        case .group:
+            returnedTab = Group(self, childrenIds: ids)
+        case .splitview:
+            returnedTab = SplitView(self, childrenIds: ids)
+        case .tab:
+            returnedTab = Tab(self)
+        }
+        
+        
+        return [returnedTab]
+        //let newTab = Tab(self)
+        // self.newTab(newTab)
         // remove existing tabs from id Array
         // create a new tab
     }

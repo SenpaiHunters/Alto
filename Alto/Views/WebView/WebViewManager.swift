@@ -7,7 +7,7 @@ import WebKit
 @Observable
 class WebViewManager: NSObject, WKNavigationDelegate, WKUIDelegate, Identifiable {
     var id = UUID()
-    var webView: WKWebView
+    var webView: AltoWebView
     var favicon: NSImage? = nil
     var isLoading: Bool? = nil
     var title: String? = nil
@@ -15,12 +15,12 @@ class WebViewManager: NSObject, WKNavigationDelegate, WKUIDelegate, Identifiable
     var mannager: Browser
     
     init(manager: Browser, url: String) {
-        self.webView = WKWebView()
+        self.webView = AltoWebView()
         self.mannager = manager
         let config = WKWebViewConfiguration()
             config.websiteDataStore = .default()
 
-        self.webView = WKWebView(frame: .zero, configuration: config)
+        self.webView = AltoWebView(frame: .zero, configuration: config)
         
         super.init()
         

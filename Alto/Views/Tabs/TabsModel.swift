@@ -89,18 +89,3 @@ class Favorite: TabItem {
         super.init(manager)
     }
 }
-
-
-enum TabState {
-    case unpinned, pinned, favorited
-}
-
-protocol Pinnable {
-    var state: TabState { get set }
-    // add functions to conform to protocall
-}
-
-protocol Favoriteable {
-    var state: TabState { get set }
-    // add functions to conform to protocall
-}
