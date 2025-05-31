@@ -2,8 +2,6 @@
 
 A Webkit based browser.
 
----
-
 ## Table of Contents
 
 - [About](#about)
@@ -13,7 +11,6 @@ A Webkit based browser.
 - [Contact](#contact)
 - [Acknowledgements](#acknowledgements)
 
----
 
 ## About
 
@@ -33,7 +30,8 @@ This browser is currently MIT Licenced but I may make it so that all browsers ba
 
 ## Contact
 
-my email
+you can contact me here:
+studiomoviegirlthings@gmail.com
 
 ## Acknowledgements
 
