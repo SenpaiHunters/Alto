@@ -26,7 +26,7 @@ ill add this later
 
 ## License
 
-This browser is currently MIT Licenced but I may make it so that all browsers based on it must be open sourced unless they contact me.
+This browser is currently licensed under a non-commercial license. However, if you contact me, I may be able to make an exception.
 
 ## Contact
 
