@@ -2,7 +2,9 @@
 import Observation
 
 
-
+/// AltoState handles the state for each window specificaly
+/// 
+/// Allows each window to display a diferent view of the tabs
 @Observable
 class AltoState {
     var data: AltoData

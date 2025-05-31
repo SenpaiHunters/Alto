@@ -1,6 +1,6 @@
 import SwiftUI
 
-
+/// A dummy View for testing
 struct dummyView: View {
     @Environment(WindowInfo.self) private var windowInfo
     @Environment(AltoState.self) private var altoState
@@ -36,6 +36,8 @@ struct dummyView: View {
     }
 }
 
+
+/// A dummy Tab View for testing
 struct dummyTabButtonView: View {
     @Environment(AltoState.self) private var altoState
     var tab: AltoTab
@@ -47,7 +49,7 @@ struct dummyTabButtonView: View {
 }
 
 
-
+/// Allows the Appkit native WKWebView to be used in SwiftUI
 struct NSWebView: NSViewRepresentable {
     var webView: AltoWebView
 

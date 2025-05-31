@@ -8,6 +8,11 @@
 import Foundation
 import WebKit
 
+
+/// Used to inject cookies into the WKWebsiteDataStore
+///
+/// This code is directly pulled from Beam:
+/// https://github.com/beamlegacy/beam/blob/3fa234d6ad509c2755c16fb3fd240e9142eaa8bb/Beam/Classes/Models/CookiesManager.swift#L11
 final class CookiesManager: NSObject, WKHTTPCookieStoreObserver {
 
     let cookieStorage: HTTPCookieStorage

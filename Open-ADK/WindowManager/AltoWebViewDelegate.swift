@@ -2,7 +2,9 @@
 import Observation
 
 
-
+/// Handles navigation requests from the Webview
+/// 
+/// This may be wraped into the tab for managment in future
 @Observable
 class AltoWebViewDelegate: NSObject, WKNavigationDelegate, WKUIDelegate {
     weak var tab: AltoTab?
@@ -31,8 +33,9 @@ class AltoWebViewDelegate: NSObject, WKNavigationDelegate, WKUIDelegate {
     }
 }
 
+
+/// Custom verson of WKWebView to avoid needing an extra class for managment
 @Observable
-// Roles the WebView and WebViewManager into one
 class AltoWebView: WKWebView {
     #if DEVELOPMENT
     static var aliveWebViewsCount: Int = 0

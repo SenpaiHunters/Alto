@@ -2,6 +2,7 @@
 
 import SwiftUI
 
+/// Manages window Creation
 class WindowManager {
     
     var window: AltoWindow? { // We need to make our own Window type like AltoWindow
@@ -24,16 +25,17 @@ class WindowManager {
     
 }
 
-
+/// This will hold information about the window
 @Observable
 class WindowInfo {
     var id = UUID()
 }
 
-
+/// An Window class with extra features
+///
+/// This was the first code I wrote for the project is a slightly modified version of Beams implimentation:
+/// https://github.com/beamlegacy/beam/blob/3fa234d6ad509c2755c16fb3fd240e9142eaa8bb/Beam/Classes/Views/BeamWindow.swift#L13
 class AltoWindow: NSWindow {
-    // Window Configuration Vars
-    
     let state: AltoState
     let showWinowButtons = false
     private var hostingView: NSView?

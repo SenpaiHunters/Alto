@@ -2,7 +2,9 @@ import SwiftUI
 import Observation
 
 
-
+/// Manges Tabs for each Window
+///
+///  Tabs will be stored in AltoData in future in order to support tabs being shared between windows (like Arc)
 @Observable
 class BrowserTabsManager {
     var state: AltoState
@@ -35,7 +37,9 @@ class BrowserTabsManager {
 }
 
 
-
+/// Simple tab implimentation
+///
+/// This will be changed to a base class later to support Tab Folders, SplitView, ect.
 @Observable
 class AltoTab: Identifiable {
     let id = UUID()
