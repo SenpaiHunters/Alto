@@ -46,12 +46,14 @@ class AltoTab: Identifiable {
     var webView: AltoWebView
     var state: AltoState
     let uiDelegateController = AltoWebViewDelegate()
+    let navigationDelegateControllor = AltoWebViewNavagationDelegate()
 
     init(webView: AltoWebView, state: AltoState) {
         self.webView = webView
         self.state = state
         state.setup(webView: self.webView)
         webView.uiDelegate = uiDelegateController
+        webView.navigationDelegate = navigationDelegateControllor
         uiDelegateController.tab = self
     }
     

@@ -10,6 +10,7 @@ class AltoData {
     static let shared = AltoData()
     let windowManager: WindowManager
     let cookieManager: CookiesManager
+    let contextManager: ContextManager
     #warning("Tab Data (but not managment) will be moved here. windows share tabs but display diferently (like Arc)")
     
     private init() {
@@ -17,6 +18,7 @@ class AltoData {
         // Each window hanles its own tab managment but the singleton handles the browser as a whole
         windowManager = WindowManager()
         cookieManager = CookiesManager()
+        contextManager = ContextManager()
         
         // Uses Apple private APIs to allow 3rd party cookies to work
         WKWebsiteDataStore.nonPersistent()._setResourceLoadStatisticsEnabled(false)

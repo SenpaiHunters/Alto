@@ -5,7 +5,6 @@ import Observation
 /// Handles navigation requests from the Webview
 /// 
 /// This may be wraped into the tab for managment in future
-@Observable
 class AltoWebViewDelegate: NSObject, WKNavigationDelegate, WKUIDelegate {
     weak var tab: AltoTab?
     
@@ -33,6 +32,13 @@ class AltoWebViewDelegate: NSObject, WKNavigationDelegate, WKUIDelegate {
     }
 }
 
+class AltoWebViewNavagationDelegate: NSObject, WKNavigationDelegate, WKUIDelegate {
+    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        print("Finished loading...")
+        AltoData.shared.contextManager.parseContext(webView: webView)
+    }
+}
+
 
 /// Custom verson of WKWebView to avoid needing an extra class for managment
 @Observable
@@ -42,6 +48,7 @@ class AltoWebView: WKWebView {
     #endif
     var currentConfiguration: WKWebViewConfiguration
     var delegate: WKUIDelegate?
+    var navDelegate: WKNavigationDelegate?
     
     override init(frame: CGRect, configuration: WKWebViewConfiguration) {
         currentConfiguration = configuration

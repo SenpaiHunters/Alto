@@ -26,5 +26,4 @@ class AltoWebViewConfigurationBase: WKWebViewConfiguration {
         defaultWebpagePreferences.preferredContentMode = .desktop
         defaultWebpagePreferences.allowsContentJavaScript = true
     }
-
 }
