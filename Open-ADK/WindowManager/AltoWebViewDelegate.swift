@@ -22,7 +22,6 @@ class AltoWebViewDelegate: NSObject, WKNavigationDelegate, WKUIDelegate {
                 tab?.state.browserTabsManager?.tabs.append(newTab)
                 tab?.state.browserTabsManager?.currentTab = newTab
                 AltoData.shared.cookieManager.setupCookies(for: newWebView)
-                newWebView.uiDelegate = AltoWebViewDelegate()
                 
                 newWebView.load(URLRequest(url: URL(string: url)!))
             }

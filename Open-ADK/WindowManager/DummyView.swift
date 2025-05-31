@@ -19,6 +19,12 @@ struct dummyView: View {
                 } label: {
                     Text("New Window")
                 }
+                HStack {
+                    ForEach(Array(altoState.browserTabsManager!.tabs.enumerated()), id: \.element.id) {
+                        index, tab in
+                        dummyTabButtonView(tab: tab)
+                    }
+                }
                 if let manager = altoState.browserTabsManager {
                     if let webView = manager.currentTab?.webView {
                         NSWebView(webView: webView)
@@ -29,6 +35,17 @@ struct dummyView: View {
         }.ignoresSafeArea()
     }
 }
+
+struct dummyTabButtonView: View {
+    @Environment(AltoState.self) private var altoState
+    var tab: AltoTab
+    var body: some View {
+        Button(action: { altoState.browserTabsManager?.currentTab = tab }) {
+            Text("Tab")
+        }
+    }
+}
+
 
 
 struct NSWebView: NSViewRepresentable {

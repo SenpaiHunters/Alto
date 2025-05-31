@@ -37,7 +37,7 @@ class BrowserTabsManager {
 
 
 @Observable
-class AltoTab {
+class AltoTab: Identifiable {
     let id = UUID()
     var webView: AltoWebView
     var state: AltoState
