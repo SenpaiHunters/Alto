@@ -1,0 +1,69 @@
+import SwiftUI
+import Observation
+
+
+
+@Observable
+class BrowserTabsManager {
+    var state: AltoState
+    var tabs: [AltoTab] = []
+    var currentTab: AltoTab? {
+        didSet {
+            print(currentTab?.webView.url)
+        }
+    }
+    
+    init(state: AltoState) {
+        self.state = state
+        createNewTab()
+    }
+    
+    func createNewTab(url: String = "https://www.google.com", frame: CGRect = .zero, configuration: WKWebViewConfiguration = WKWebViewConfiguration()) {
+        let newWebView = AltoWebView(frame: frame, configuration: configuration)
+        AltoData.shared.cookieManager.setupCookies(for: newWebView)
+        
+        if let url = URL(string: url) {
+            let request = URLRequest(url: url)
+            newWebView.load(request)
+        }
+        
+        let newTab = AltoTab(webView: newWebView, state: state)
+        tabs.append(newTab)
+        currentTab = newTab
+        print(tabs)
+    }
+}
+
+
+
+@Observable
+class AltoTab {
+    let id = UUID()
+    var webView: AltoWebView
+    var state: AltoState
+    let uiDelegateController = AltoWebViewDelegate()
+
+    init(webView: AltoWebView, state: AltoState) {
+        self.webView = webView
+        self.state = state
+        state.setup(webView: self.webView)
+        webView.uiDelegate = uiDelegateController
+        uiDelegateController.tab = self
+    }
+    
+    func createNewTab(_ url: String, _ configuration: WKWebViewConfiguration, frame: CGRect = .zero) {
+        let newWebView = AltoWebView(frame: frame, configuration: AltoWebViewConfigurationBase())
+        
+
+        AltoData.shared.cookieManager.setupCookies(for: newWebView)
+        
+        if let url = URL(string: url) {
+            let request = URLRequest(url: url)
+            newWebView.load(request)
+        }
+        print("called")
+        let newTab = AltoTab(webView: newWebView, state: state)
+        state.browserTabsManager?.tabs.append(newTab)
+        state.browserTabsManager?.currentTab = newTab
+    }
+}

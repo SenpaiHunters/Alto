@@ -1,7 +1,6 @@
 //
 
 
-
 class AltoWebViewConfigurationBase: WKWebViewConfiguration {
     static var allowsPictureInPicture: Bool {
         #if BEAM_WEBKIT_ENHANCEMENT_ENABLED
