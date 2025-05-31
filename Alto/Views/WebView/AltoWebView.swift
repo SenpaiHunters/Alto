@@ -5,6 +5,23 @@ import SwiftUI
 import WebKit
 
 @objc class AltoWebView: WKWebView {
+    var currentConfiguration: WKWebViewConfiguration
+    
+    override init(frame: CGRect, configuration: WKWebViewConfiguration) {
+        currentConfiguration = configuration
+        WKWebsiteDataStore.nonPersistent()._setResourceLoadStatisticsEnabled(false)
+        WKWebsiteDataStore.default()._setResourceLoadStatisticsEnabled(false)
+
+        super.init(frame: frame, configuration: configuration)
+        
+
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
+    
     
     public override func mouseDown(with theEvent: NSEvent) {
         super.mouseDown(with: theEvent)

@@ -3,6 +3,8 @@ import SwiftUI
 import Observation
 import AppKit
 import WebKit
+import ObjectiveC.runtime
+
 
 /// allows browser class to be accsesed in all views
 extension EnvironmentValues {
@@ -177,5 +179,15 @@ class Browser: Identifiable {
         // self.newTab(newTab)
         // remove existing tabs from id Array
         // create a new tab
+    }
+}
+
+extension WKWebView {
+    /// Works only for a BeamWebView.
+    ///
+    /// WKWebView's `configuration` is marked with @NSCopying.
+    /// So everytime you try to access it, it creates a copy of it, which is most likely not what we want.
+    var configurationWithoutMakingCopy: WKWebViewConfiguration {
+        (self as? AltoWebView)?.currentConfiguration ?? configuration
     }
 }

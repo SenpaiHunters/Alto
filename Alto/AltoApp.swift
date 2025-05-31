@@ -1,8 +1,9 @@
 
 import SwiftUI
+import WebKit
 
-@main
-struct AltoApp: App {
+//@main
+struct AltoApp1: App {
     @Environment(\.appearsActive) private var appearsActive
     var browser: Browser = Browser()
     
@@ -14,3 +15,4 @@ struct AltoApp: App {
         .environment(\.browser, browser)
     }
 }
+

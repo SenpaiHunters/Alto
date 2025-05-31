@@ -3,6 +3,7 @@
 import Observation
 import SwiftUI
 import WebKit
+import ObjectiveC.runtime
 
 @Observable
 class WebViewManager: NSObject, WKNavigationDelegate, WKUIDelegate, Identifiable {
@@ -14,13 +15,16 @@ class WebViewManager: NSObject, WKNavigationDelegate, WKUIDelegate, Identifiable
     var url: URL?
     var mannager: Browser
     
+    
     init(manager: Browser, url: String) {
-        self.webView = AltoWebView()
-        self.mannager = manager
+                
         let config = WKWebViewConfiguration()
-            config.websiteDataStore = .default()
-
+        config.websiteDataStore = .default()
+                
         self.webView = AltoWebView(frame: .zero, configuration: config)
+        self.mannager = manager
+
+        
         
         super.init()
         
@@ -38,9 +42,8 @@ class WebViewManager: NSObject, WKNavigationDelegate, WKUIDelegate, Identifiable
         self.webView.configuration.preferences.isElementFullscreenEnabled = true
         self.webView.allowsLinkPreview = true
         self.webView.isInspectable = true
-        
     }
-
+    
     func load(string: String) {
         if let url = URL(string: string) {
             webView.load(URLRequest(url: url))

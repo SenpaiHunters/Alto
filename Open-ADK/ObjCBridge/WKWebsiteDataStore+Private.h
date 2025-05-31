@@ -1,6 +1,7 @@
 #import <WebKit/WebKit.h>
 #import <Foundation/Foundation.h>
 
+// The header declares that these are all functions of a the class, exposing them to swiftUI
 @interface WKWebsiteDataStore ()
 // Enable or disable Intelligent Tracking Prevention (ITP). When ITP is enabled resource load statistics
 // are collected and used to decide whether to allow or block third-party cookies and prevent user tracking.

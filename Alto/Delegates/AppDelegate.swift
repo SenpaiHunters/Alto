@@ -3,7 +3,7 @@ import SwiftUI
 import Foundation
 import WebKit
 
-class AppDelegate: NSObject, NSApplicationDelegate {
+class AppDelegate1: NSObject, NSApplicationDelegate {
     
     func applicationDidFinishLaunching(_ notification: Notification) {
         hideWindowIcons()
