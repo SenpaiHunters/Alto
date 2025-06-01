@@ -11,6 +11,7 @@ class AltoData {
     let windowManager: WindowManager
     let cookieManager: CookiesManager
     let contextManager: ContextManager
+    let llmManager: LLMManager
     #warning("Tab Data (but not managment) will be moved here. windows share tabs but display diferently (like Arc)")
     
     private init() {
@@ -19,9 +20,13 @@ class AltoData {
         windowManager = WindowManager()
         cookieManager = CookiesManager()
         contextManager = ContextManager()
+        llmManager = LLMManager()
+
         
         // Uses Apple private APIs to allow 3rd party cookies to work
         WKWebsiteDataStore.nonPersistent()._setResourceLoadStatisticsEnabled(false)
         WKWebsiteDataStore.default()._setResourceLoadStatisticsEnabled(false)
     }
 }
+
+

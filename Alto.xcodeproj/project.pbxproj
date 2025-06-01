@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		C4B4A72C2DEBB57A001EADBE /* HTML2Markdown in Frameworks */ = {isa = PBXBuildFile; productRef = C4B4A72B2DEBB57A001EADBE /* HTML2Markdown */; };
+		C4B4A72F2DEBB72D001EADBE /* SwiftSoup in Frameworks */ = {isa = PBXBuildFile; productRef = C4B4A72E2DEBB72D001EADBE /* SwiftSoup */; };
 		C4E36BE02DCEDCB200B049A3 /* Algorithms in Frameworks */ = {isa = PBXBuildFile; productRef = C4E36BDF2DCEDCB200B049A3 /* Algorithms */; };
 /* End PBXBuildFile section */
 
@@ -47,6 +49,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				C4E36BE02DCEDCB200B049A3 /* Algorithms in Frameworks */,
+				C4B4A72C2DEBB57A001EADBE /* HTML2Markdown in Frameworks */,
+				C4B4A72F2DEBB72D001EADBE /* SwiftSoup in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -106,6 +110,8 @@
 			name = Alto;
 			packageProductDependencies = (
 				C4E36BDF2DCEDCB200B049A3 /* Algorithms */,
+				C4B4A72B2DEBB57A001EADBE /* HTML2Markdown */,
+				C4B4A72E2DEBB72D001EADBE /* SwiftSoup */,
 			);
 			productName = Alto;
 			productReference = C4E36B4D2DCEB6C200B049A3 /* Alto.app */;
@@ -185,6 +191,8 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				C4E36BDE2DCEDCB200B049A3 /* XCRemoteSwiftPackageReference "swift-algorithms" */,
+				C4B4A72A2DEBB51F001EADBE /* XCRemoteSwiftPackageReference "HTML2Markdown" */,
+				C4B4A72D2DEBB72D001EADBE /* XCRemoteSwiftPackageReference "SwiftSoup" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = C4E36B4E2DCEB6C200B049A3 /* Products */;
@@ -674,6 +682,22 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		C4B4A72A2DEBB51F001EADBE /* XCRemoteSwiftPackageReference "HTML2Markdown" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://gitlab.com/mflint/HTML2Markdown.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.0.0;
+			};
+		};
+		C4B4A72D2DEBB72D001EADBE /* XCRemoteSwiftPackageReference "SwiftSoup" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/scinfu/SwiftSoup.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.8.7;
+			};
+		};
 		C4E36BDE2DCEDCB200B049A3 /* XCRemoteSwiftPackageReference "swift-algorithms" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/apple/swift-algorithms.git";
@@ -685,6 +709,16 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		C4B4A72B2DEBB57A001EADBE /* HTML2Markdown */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C4B4A72A2DEBB51F001EADBE /* XCRemoteSwiftPackageReference "HTML2Markdown" */;
+			productName = HTML2Markdown;
+		};
+		C4B4A72E2DEBB72D001EADBE /* SwiftSoup */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C4B4A72D2DEBB72D001EADBE /* XCRemoteSwiftPackageReference "SwiftSoup" */;
+			productName = SwiftSoup;
+		};
 		C4E36BDF2DCEDCB200B049A3 /* Algorithms */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = C4E36BDE2DCEDCB200B049A3 /* XCRemoteSwiftPackageReference "swift-algorithms" */;

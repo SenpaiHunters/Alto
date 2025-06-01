@@ -20,7 +20,7 @@ class BrowserTabsManager {
         createNewTab()
     }
     
-    func createNewTab(url: String = "https://www.google.com", frame: CGRect = .zero, configuration: WKWebViewConfiguration = WKWebViewConfiguration()) {
+    func createNewTab(url: String = "https://www.google.com", frame: CGRect = .zero, configuration: WKWebViewConfiguration = AltoWebViewConfigurationBase()) {
         let newWebView = AltoWebView(frame: frame, configuration: configuration)
         AltoData.shared.cookieManager.setupCookies(for: newWebView)
         
