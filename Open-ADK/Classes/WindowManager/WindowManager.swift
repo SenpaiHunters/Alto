@@ -58,6 +58,7 @@ class AltoWindow: NSWindow {
         }
         
         let info = WindowInfo()
+        
         let mainView = dummyView()
             .environment(info)
             .environment(self.state)
@@ -68,16 +69,10 @@ class AltoWindow: NSWindow {
 
         self.hostingView = hostingView
 
-        let visualEffect = NSVisualEffectView()
-        visualEffect.blendingMode = .behindWindow
-        visualEffect.state = .active
-        visualEffect.material = .hudWindow
         contentView = hostingView
         
         self.titlebarAppearsTransparent = true
         self.titleVisibility = .hidden
-
-        //self.contentView?.addSubview(hostingView)
 
         self.isMovableByWindowBackground = false
     }

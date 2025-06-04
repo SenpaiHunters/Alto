@@ -41,6 +41,11 @@
 			path = "Open-ADK";
 			sourceTree = "<group>";
 		};
+		C4DB134C2DEFBA3600B5D483 /* Alto */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Alto;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -74,6 +79,7 @@
 		C4E36B442DCEB6C200B049A3 = {
 			isa = PBXGroup;
 			children = (
+				C4DB134C2DEFBA3600B5D483 /* Alto */,
 				C4B155632DE6C7E7005493CE /* Open-ADK */,
 				C4E36B4E2DCEB6C200B049A3 /* Products */,
 			);
@@ -106,6 +112,7 @@
 			);
 			fileSystemSynchronizedGroups = (
 				C4B155632DE6C7E7005493CE /* Open-ADK */,
+				C4DB134C2DEFBA3600B5D483 /* Alto */,
 			);
 			name = Alto;
 			packageProductDependencies = (

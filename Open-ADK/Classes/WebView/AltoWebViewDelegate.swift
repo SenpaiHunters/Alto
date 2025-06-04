@@ -22,7 +22,7 @@ class AltoWebViewDelegate: NSObject, WKNavigationDelegate, WKUIDelegate {
                 
                 tab?.state.browserTabsManager?.tabs.append(newTab)
                 tab?.state.browserTabsManager?.currentTab = newTab
-                AltoData.shared.cookieManager.setupCookies(for: newWebView)
+                Alto.shared.cookieManager.setupCookies(for: newWebView)
                 
                 newWebView.load(URLRequest(url: URL(string: url)!))
             }
@@ -35,8 +35,8 @@ class AltoWebViewDelegate: NSObject, WKNavigationDelegate, WKUIDelegate {
 class AltoWebViewNavagationDelegate: NSObject, WKNavigationDelegate, WKUIDelegate {
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         print("Finished loading...")
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            AltoData.shared.contextManager.retrieveHTML(webView: webView)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            Alto.shared.contextManager.pullContext(for: webView)
         }
     }
 }

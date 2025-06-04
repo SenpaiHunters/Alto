@@ -7,12 +7,12 @@ import Observation
 /// Allows each window to display a diferent view of the tabs
 @Observable
 class AltoState {
-    var data: AltoData
+    var data: Alto
     var sidebar = false
     var browserTabsManager: BrowserTabsManager?
 
     init() {
-        data = AltoData.shared
+        data = Alto.shared
 
         self.browserTabsManager = BrowserTabsManager(state: self)
     }

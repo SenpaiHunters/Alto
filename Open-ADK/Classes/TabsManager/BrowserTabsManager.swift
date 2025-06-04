@@ -4,7 +4,7 @@ import Observation
 
 /// Manges Tabs for each Window
 ///
-///  Tabs will be stored in AltoData in future in order to support tabs being shared between windows (like Arc)
+///  Tabs will be stored in Alto in future in order to support tabs being shared between windows (like Arc)
 @Observable
 class BrowserTabsManager {
     var state: AltoState
@@ -22,7 +22,7 @@ class BrowserTabsManager {
     
     func createNewTab(url: String = "https://www.google.com", frame: CGRect = .zero, configuration: WKWebViewConfiguration = AltoWebViewConfigurationBase()) {
         let newWebView = AltoWebView(frame: frame, configuration: configuration)
-        AltoData.shared.cookieManager.setupCookies(for: newWebView)
+        Alto.shared.cookieManager.setupCookies(for: newWebView)
         
         if let url = URL(string: url) {
             let request = URLRequest(url: url)
@@ -61,7 +61,7 @@ class AltoTab: Identifiable {
         let newWebView = AltoWebView(frame: frame, configuration: AltoWebViewConfigurationBase())
         
 
-        AltoData.shared.cookieManager.setupCookies(for: newWebView)
+        Alto.shared.cookieManager.setupCookies(for: newWebView)
         
         if let url = URL(string: url) {
             let request = URLRequest(url: url)

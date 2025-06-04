@@ -2,12 +2,12 @@
 import Observation
 
 
-/// AltoData handles the data for the entire browser
+/// Alto handles the data for the entire browser
 /// 
 /// Data here is shared between all windows
 @Observable
-class AltoData {
-    static let shared = AltoData()
+class Alto {
+    static let shared = Alto()
     let windowManager: WindowManager
     let cookieManager: CookiesManager
     let contextManager: ContextManager

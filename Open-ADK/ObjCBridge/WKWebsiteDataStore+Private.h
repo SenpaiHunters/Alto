@@ -1,5 +1,6 @@
 #import <WebKit/WebKit.h>
 #import <Foundation/Foundation.h>
+// This code comes from Beam's system: https://github.com/beamlegacy/beam
 
 // The header declares that these are all functions of a the class, exposing them to swiftUI
 @interface WKWebsiteDataStore ()
