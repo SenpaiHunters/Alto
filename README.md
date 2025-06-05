@@ -26,7 +26,7 @@ ill add this later
 
 ## License
 
-This browser is currently licensed under a non-commercial license. However, if you contact me, I may be able to make an exception.
+This browser is currently licensed under a non-commercial license I will ask the Beam Team if they are ok with allowing comerical use but for now it will maintian Beam's license.
 
 ## Contact
 
