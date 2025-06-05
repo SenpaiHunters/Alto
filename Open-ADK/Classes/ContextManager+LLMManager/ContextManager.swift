@@ -2,7 +2,9 @@ import SwiftSoup
 
 // ToDo: Fix img tags without /> at the end are not pulled properly
 // ToDo: Fix new lines within links and images
-class ContextManager {
+// ToDO: Replace this with a DOM like model where heading and images are stored as structs in
+// a higharchy of parents and children objects, allowing parents to inharet from children
+class ContextManagerOld {
     var cWhitelist: Whitelist?
     
     init() {
@@ -33,7 +35,7 @@ class ContextManager {
         webView.evaluateJavaScript("document.documentElement.outerHTML.toString()") { result, error in
             if let html = result as? String {
                 
-                var cleanedHTML = self.parseHTML(html: html)
+                var cleanedHTML = self.parseHTML(html: html) // for testing you can plug in your own html
                 cleanedHTML = self.replaceTags(for: cleanedHTML)
                 print("Cleaned HTML: \n\(cleanedHTML)")
                 
@@ -88,7 +90,7 @@ class ContextManager {
             
             let patterns: [(pattern: String, template: String)] = [
                 (#"<a.*?href="([^"]*)".*?>([\s\S]*?)<\/a>"#, "[$2]($1)\n"),
-                (#"<a>([\s\S]*?)<\/a>"#, "[$1]()\n"),
+                (#"<a>([\s\S]*?)<\/a>"#, "$1\n"),
             ]
             
             for (pattern, template) in patterns {
