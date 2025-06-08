@@ -10,7 +10,7 @@ class Alto {
     static let shared = Alto()
     let windowManager: WindowManager
     let cookieManager: CookiesManager
-    let contextManager: ContextManager
+    let contextManager: NewContextManager
     let llmManager: LLMManager
     #warning("Tab Data (but not managment) will be moved here. windows share tabs but display diferently (like Arc)")
     
@@ -19,7 +19,7 @@ class Alto {
         // Each window hanles its own tab managment but the singleton handles the browser as a whole
         windowManager = WindowManager()
         cookieManager = CookiesManager()
-        contextManager = ContextManager()
+        contextManager = NewContextManager()
         llmManager = LLMManager()
 
         

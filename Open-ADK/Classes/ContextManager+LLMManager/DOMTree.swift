@@ -1,137 +1,215 @@
 //
 import SwiftSoup
 
-
-class DOMTree {
-    var elementMap: [UUID: DOMElement] = [:]
-    var rootElements: [DOMElement] = []
+class NewDOMTree {
+    var document: Document?
+    var rootElement: DOMElement?
+    var elementLookup: [UUID:DOMElement] = [:]
     
-    init() {
+    
+    init(for html: String, sanatize: Bool = true) {
+        do {
+            self.document = try SwiftSoup.parse(html)
+        } catch {
+            print("failed to convert to document")
+        }
         
+        if sanatize {
+            self.stripHiddenContent()
+        }
+        
+        self.constructDOM()
+        print("===============================================================")
+        if let rootElement = self.rootElement {
+            self.printTree(rootElement)
+        }
+        
+        print("===============================================================")
+        print("done!")
+    }
+    
+    func stripHiddenContent() {
+        guard let document = self.document else {
+            return
+        }
+        do {
+            let hiddenTags = ["script","script nonce", "style", "template", "noscript"]
+            for tag in hiddenTags {
+                let elements = try document.select(tag)
+                for element in elements {
+                    try element.remove()
+                }
+            }
+            
+            let hiddenElements = try document.select("[hidden], [aria-hidden='true'], [aria-expanded='false']")
+            for element in hiddenElements {
+                try element.remove()
+            }
+            
+            let hiddenStyleElements = try document.select("[style]")
+            for element in hiddenStyleElements {
+                let style = try element.attr("style")
+                let pattern = #"display\s*:\s*none"#
+                let regex = try NSRegularExpression(pattern: pattern, options: [.caseInsensitive])
+                let range = NSRange(style.startIndex..<style.endIndex, in: style)
+                
+                if regex.firstMatch(in: style, options: [], range: range) != nil {
+                    try element.remove()
+                }
+            }
+        } catch {
+            print("failed to strip hidden content")
+        }
+    }
+    
+    func constructDOM() {
+        guard let document = self.document else {
+            return
+        }
+        
+        do {
+            if let body = try document.select("body").first() {
+                let bodyDOM = Div(self, element: body)
+                self.rootElement = bodyDOM
+                for child in body.getChildNodes() {
+                    if let node = child as? Element {
+                        bodyDOM.addChild(node, propagate: true)
+                        print(try node.text(), "\n")
+                    }
+                }
+            }
+        } catch {
+            print()
+        }
     }
     
     func printTree(_ element: DOMElement, indent: String = "") {
-        print("\(indent)- \(type(of: element)) Depth: \(element.depth)")
+        if element.children.count != 0 {
+            print("\(indent)- \(type(of: element)) depth: \(element.depth)")
+        } else {
+            print("\(indent)- content: \(String(describing: try? element.element?.text())) depth: \(element.depth)")
+        }
         for child in element.children {
             printTree(child, indent: indent + "  ")
         }
     }
-
-    func prossesElement(_ element: Element, parrent: DOMElement?, customElement: DOMElement? = nil, tree: DOMTree = DOMTree()) throws {
-        let tagName = element.tagName().lowercased()
-        
-        let MDElement: DOMElement = customElement ?? {
-            switch tagName {
-            case "html": return Html(tree)
-            case "head": return Head(tree)
-            case "body": return Body(tree)
-            case "title": return Title(tree)
-            case "meta": return Meta(tree)
-            case "link": return Link(tree)
-            case "script": return Script(tree)
-            case "style": return Style(tree)
-            case "div": return Div(tree)
-            case "span": return Span(tree)
-            case "p": return P(tree)
-            case "h1", "h2", "h3", "h4", "h5", "h6": return Heading(tree)
-            default: return Div(tree)
-            }
-        }()
-        
-        if tagName == "html" {
-            self.rootElements.append(MDElement)
+    
+    func printMD(_ element: DOMElement, indent: String = "") {
+        if element.children.count != 0 {
+            print("\n")
+        } else {
+            let text = (try? element.element?.text()) ?? ""
+            
+            print("\(text)")
         }
-        
-        if let parrent {
-            parrent.addChild(MDElement)
-        }
-        
-        for child in element.children() {
-            try prossesElement(child, parrent: MDElement, tree: tree)
+        for child in element.children {
+            printMD(child, indent: indent + "  ")
         }
     }
     
-    func prossesDOM() {
-        if let maxValue = elementMap.values.map({ $0.depth }).max() {
-            
-            let maxEntries = elementMap.filter { $0.value.depth == maxValue }
-            print("Max Value: \(maxValue)")
-            print("Max Entries: \(maxEntries)")
-            
-            for element in maxEntries {
-                if element.value.tagName == "div" {
-                    self.elementMap.removeValue(forKey: element.key)
-                    element.value.parent?.children.removeAll(where: { $0.id == element.key})
-                }
-                if element.value.parent?.children.count == 0 {
-                    
-                } else {
-                    print("multiple childs: \(element.value.parent?.tagName)")
-                }
-            }
     
-        }
+    func collapseDOMIterative() {
+        // ToDo: add code here lol
     }
 }
+
+
 
 class DOMElement {
     var id = UUID()
-    var tree: DOMTree
+    var tree: NewDOMTree
     weak var parent: DOMElement?
     var children: [DOMElement] = []
-    var content: String?
+    var element: Element?
     var depth: Int
     let tagName: String
     
-    init(_ tree: DOMTree, tagName: String, depth: Int = 0) {
+    init(_ tree: NewDOMTree, tagName: String, element: Element? = nil, depth: Int = 0, propagate: Bool = false) {
         self.tree = tree
         self.tagName = tagName
+        self.element = element
         self.depth = depth
-        self.tree.elementMap[self.id] = self
+        
+        if propagate == true {
+            self.handlePropagation()
+        }
+        
+        self.tree.elementLookup[id] = self
     }
     
-    func addChild(_ child: DOMElement) {
+    func handlePropagation() {
+        if let element = self.element {
+            for child in element.getChildNodes() {
+                if let node = child as? Element {
+                    self.addChild(node, propagate: true)
+                }
+            }
+        }
+    }
+    
+    func addChild(_ element: Element, propagate: Bool = false) {
+        let child = Div(tree, element: element, depth: self.depth + 1, propagate: propagate)
         self.children.append(child)
         child.parent = self
-        let childDepth = self.depth + 1
-        child.depth = childDepth
-        self.tree.elementMap[child.id] = child
+    }
+    
+    func addChild(_ element: DOMElement) {
+        self.children.append(element)
+        element.parent = self
+        element.depth = self.depth + 1
+    }
+    
+    func replaceSelfWithChild(_ element: DOMElement) {
+        self.parent?.addChild(element)
+        removeSelf()
+    }
+    
+    func removeSelf() {
+        self.parent?.children.removeAll(where: { $0.id == self.id})
+        self.tree.elementLookup.removeValue(forKey: self.id)
     }
 }
+
 class Html: DOMElement {
-    init(_ tree: DOMTree) { super.init(tree, tagName: "html") }
+    init(_ tree: NewDOMTree, element: Element? = nil, propagate: Bool = false) { super.init(tree, tagName: "html", element: element) }
 }
 class Head: DOMElement {
-    init(_ tree: DOMTree) { super.init(tree, tagName: "head") }
+    init(_ tree: NewDOMTree, element: Element? = nil) { super.init(tree, tagName: "head", element: element) }
 }
 class Body: DOMElement {
-    init(_ tree: DOMTree) { super.init(tree, tagName: "body") }
+    init(_ tree: NewDOMTree, element: Element? = nil) { super.init(tree, tagName: "body", element: element) }
 }
 class Title: DOMElement {
-    init(_ tree: DOMTree) { super.init(tree, tagName: "title") }
+    init(_ tree: NewDOMTree, element: Element? = nil) { super.init(tree, tagName: "title", element: element) }
 }
 class Meta: DOMElement {
-    init(_ tree: DOMTree) { super.init(tree, tagName: "meta") }
+    init(_ tree: NewDOMTree, element: Element? = nil) { super.init(tree, tagName: "meta", element: element) }
 }
 class Link: DOMElement {
-    init(_ tree: DOMTree) { super.init(tree, tagName: "link") }
+    init(_ tree: NewDOMTree, element: Element? = nil) { super.init(tree, tagName: "link", element: element) }
 }
 class Script: DOMElement {
-    init(_ tree: DOMTree) { super.init(tree, tagName: "script") }
+    init(_ tree: NewDOMTree, element: Element? = nil) { super.init(tree, tagName: "script", element: element) }
 }
 class Style: DOMElement {
-    init(_ tree: DOMTree) { super.init(tree, tagName: "style") }
+    init(_ tree: NewDOMTree, element: Element? = nil) { super.init(tree, tagName: "style", element: element) }
 }
 
 class Div: DOMElement {
-    init(_ tree: DOMTree) { super.init(tree, tagName: "div") }
+    init(_ tree: NewDOMTree, element: Element? = nil, depth: Int = 0, propagate: Bool = false) { super.init(tree, tagName: "div", element: element, depth: depth, propagate: propagate) }
 }
 class Span: DOMElement {
-    init(_ tree: DOMTree) { super.init(tree, tagName: "span") }
+    init(_ tree: NewDOMTree, element: Element? = nil) { super.init(tree, tagName: "span", element: element) }
 }
 class P: DOMElement {
-    init(_ tree: DOMTree) { super.init(tree, tagName: "p") }
+    init(_ tree: NewDOMTree, element: Element? = nil) { super.init(tree, tagName: "p", element: element) }
 }
 class Heading: DOMElement {
-    init(_ tree: DOMTree) { super.init(tree, tagName: "h") } // or "h1" etc, depending on usage
+    init(_ tree: NewDOMTree, element: Element) { super.init(tree, tagName: element.tagName().lowercased(), element: element) }
 }
+
+class TextDiv: DOMElement {
+    init(_ tree: NewDOMTree, element: Element? = nil) { super.init(tree, tagName: "text", element: element) }
+}
+
+

@@ -36,7 +36,7 @@ class AltoWebViewNavagationDelegate: NSObject, WKNavigationDelegate, WKUIDelegat
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         print("Finished loading...")
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            Alto.shared.contextManager.pullContext(for: webView)
+            Alto.shared.contextManager.pullContextFromPage(for: webView)
         }
     }
 }
