@@ -20,19 +20,36 @@ struct dummyView: View {
                 }
                 
                 HStack {
-                    ForEach(Array(altoState.browserTabsManager!.tabs.enumerated()), id: \.element.id) {
-                        index, tab in
-                        dummyTabButtonView(tab: tab)
+                    Button {
+                            altoState.browserTabsManager.spaceIndex = (altoState.browserTabsManager.spaceIndex + 1) % Alto.shared.spaces.count
+
+                    } label: {
+                        Text("Space Toggle")
+                    }
+                    
+                    Spacer()
+
+                        // DragAndDropView(DragAndDropViewModel(state: altoState, tabLocation: tabManager.favorites))
+                        // DragAndDropView(DragAndDropViewModel(state: altoState, tabLocation: tabManager.currentSpace.pinned))
+                        DragAndDropView(DragAndDropViewModel(state: altoState, tabLocation: altoState.browserTabsManager.currentSpace.normal))
+
+                    
+                    Button {
+                        altoState.browserTabsManager.createNewTab()
+                    } label: {
+                        Text(" + ")
                     }
                 }
-                if let manager = altoState.browserTabsManager {
-                    if let webView = manager.currentTab?.webView {
+                
+                    if let webView = altoState.browserTabsManager.currentSpace.currentTab?.webView {
                         NSWebView(webView: webView)
-                            .id(manager.currentTab?.id)
+                            .id(altoState.browserTabsManager.currentSpace.currentTab?.id)
+                    } else {
+                        Spacer()
                     }
-                }
+
             }
-        }.ignoresSafeArea()
+        }
     }
 }
 
@@ -42,22 +59,9 @@ struct dummyTabButtonView: View {
     @Environment(AltoState.self) private var altoState
     var tab: AltoTab
     var body: some View {
-        Button(action: { altoState.browserTabsManager?.currentTab = tab }) {
+        Button(action: { altoState.browserTabsManager.currentSpace.currentTab = tab }) {
             Text("Tab")
         }
     }
 }
 
-
-/// Allows the Appkit native WKWebView to be used in SwiftUI
-struct NSWebView: NSViewRepresentable {
-    var webView: AltoWebView
-
-    func makeNSView(context: Context) -> WKWebView {
-        return webView
-    }
-
-    func updateNSView(_ nsView: NSViewType, context: Context) {
-
-    }
-}

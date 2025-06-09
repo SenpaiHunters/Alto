@@ -1,15 +1,6 @@
 {
-  "originHash" : "9d4d50a7e6fd36111b0b9885f5a3d028cab037052ecff2b37d0d5b23d4c7338d",
+  "originHash" : "42df9460c5276cc3a4777a502ba089fdc3e9589b35a521d7a6b45ec050ee241f",
   "pins" : [
-    {
-      "identity" : "html2markdown",
-      "kind" : "remoteSourceControl",
-      "location" : "https://gitlab.com/mflint/HTML2Markdown.git",
-      "state" : {
-        "revision" : "00d7a9744bbd1e7762c587bbd248775e16345a65",
-        "version" : "1.0.0"
-      }
-    },
     {
       "identity" : "swift-algorithms",
       "kind" : "remoteSourceControl",

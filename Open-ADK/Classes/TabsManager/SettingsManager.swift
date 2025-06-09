@@ -1,0 +1,8 @@
+//
+
+
+
+@Observable
+class SettingsManager {
+    
+}

@@ -6,6 +6,7 @@ struct BrowserView: View {
     var body: some View {
         ZStack {
             WindowBackgroundView()
+            BrowserContentView()
         }
     }
 }
@@ -13,3 +14,4 @@ struct BrowserView: View {
 #Preview {
     BrowserView()
 }
+

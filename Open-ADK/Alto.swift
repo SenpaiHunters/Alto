@@ -8,11 +8,12 @@ import Observation
 @Observable
 class Alto {
     static let shared = Alto()
+    var tabs: [UUID:AltoTab] = [:]
+    var spaces: [Space] = [Space(), Space()]
     let windowManager: WindowManager
     let cookieManager: CookiesManager
     let contextManager: NewContextManager
-    let llmManager: LLMManager
-    #warning("Tab Data (but not managment) will be moved here. windows share tabs but display diferently (like Arc)")
+    let settingsManager: SettingsManager
     
     private init() {
         // These are state agnostic managers that will be used no matter what
@@ -20,13 +21,23 @@ class Alto {
         windowManager = WindowManager()
         cookieManager = CookiesManager()
         contextManager = NewContextManager()
-        llmManager = LLMManager()
+        settingsManager = SettingsManager()
 
         
         // Uses Apple private APIs to allow 3rd party cookies to work
-        WKWebsiteDataStore.nonPersistent()._setResourceLoadStatisticsEnabled(false)
-        WKWebsiteDataStore.default()._setResourceLoadStatisticsEnabled(false)
+        // WKWebsiteDataStore.nonPersistent()._setResourceLoadStatisticsEnabled(false)
+        // WKWebsiteDataStore.default()._setResourceLoadStatisticsEnabled(false)
+    }
+    
+    func getTab(id: UUID) -> AltoTab {
+        let tab = self.tabs.first(where: { $0.key == id})?.value
+        return tab!
+    }
+    
+    func removeTab(_ tabRep: TabRepresentation) {
+        let tab = self.getTab(id:tabRep.id)
+        tab.location?.removeTab(tabRep: tabRep)
+        self.tabs.removeValue(forKey: tabRep.id)
+        
     }
 }
-
-

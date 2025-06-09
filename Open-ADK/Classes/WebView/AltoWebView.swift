@@ -1,6 +1,3 @@
-//
-
-
 
 /// Custom verson of WKWebView to avoid needing an extra class for managment
 @Observable
@@ -31,8 +28,6 @@ class AltoWebView: WKWebView {
         AltoWebView.aliveWebViewsCount -= 1
         #endif
     }
-    
-    
 }
 
 extension WKWebView {
@@ -41,5 +36,4 @@ extension WKWebView {
     var configurationWithoutMakingCopy: WKWebViewConfiguration {
         (self as? AltoWebView)?.currentConfiguration ?? configuration
     }
-    
 }

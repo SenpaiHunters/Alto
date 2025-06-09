@@ -17,7 +17,7 @@ class WindowManager {
     
     func createWindow() {
         let window = AltoWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 400, height: 300)
+            contentRect: NSRect(x: 150, y: 150, width: 800, height: 600)
         )
         
         window.orderFront(nil)
@@ -50,7 +50,8 @@ class AltoWindow: NSWindow {
         self.titlebarAppearsTransparent = true
         self.titleVisibility = .hidden
         self.isReleasedWhenClosed = false
-        
+        self.isMovableByWindowBackground = false
+        self.isMovable = false
         if !showWinowButtons {
             self.standardWindowButton(NSWindow.ButtonType.closeButton)?.isHidden = true
             self.standardWindowButton(NSWindow.ButtonType.zoomButton)?.isHidden = true
@@ -59,9 +60,10 @@ class AltoWindow: NSWindow {
         
         let info = WindowInfo()
         
-        let mainView = dummyView()
+        let mainView = BrowserView()
             .environment(info)
             .environment(self.state)
+            .ignoresSafeArea()
         
         let hostingView = NSHostingView(rootView: mainView)
 
@@ -70,11 +72,8 @@ class AltoWindow: NSWindow {
         self.hostingView = hostingView
 
         contentView = hostingView
-        
-        self.titlebarAppearsTransparent = true
-        self.titleVisibility = .hidden
-
-        self.isMovableByWindowBackground = false
     }
+    
+
     
 }

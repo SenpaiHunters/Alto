@@ -9,12 +9,12 @@ import Observation
 class AltoState {
     var data: Alto
     var sidebar = false
-    var browserTabsManager: BrowserTabsManager?
-
+    var browserTabsManager: BrowserTabsManager = BrowserTabsManager()
+    var draggedTab: TabRepresentation?
+    
     init() {
         data = Alto.shared
-
-        self.browserTabsManager = BrowserTabsManager(state: self)
+        self.browserTabsManager.state = self
     }
     
     func setup(webView: WKWebView) {
