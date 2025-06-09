@@ -35,10 +35,14 @@ struct AltoTopBar: View {
                 AltoButton(action: {
                     model.currentTab?.webView.goBack()
                 }, icon: "arrow.left", active: model.currentTab?.canGoBack ?? false)
+                .frame(height: 30)
+                .fixedSize()
                 
                 AltoButton(action: {
                     model.currentTab?.webView.goForward()
                 }, icon: "arrow.right", active: model.currentTab?.canGoForward ?? false)
+                .frame(height: 30)
+                .fixedSize()
                 
                 AltoFavoritesView(DragAndDropViewModel(state: model.state, tabLocation: model.state.browserTabsManager.favorites))
                     .frame(height: 30)

@@ -52,6 +52,7 @@ struct TabView: View {
                 model.tabIcon
                     .resizable()
                     .scaledToFit()
+                    .cornerRadius(5)
                 Text(model.tabTitle)
                 
                 Spacer()

@@ -71,7 +71,11 @@ extension AltoTab: WKNavigationDelegate, WKUIDelegate {
     
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         print("FINISHED LOADING")
-        self.title = webView.title ?? ""
+        if webView.title == "" {
+            self.title = webView.url?.absoluteString ?? "Untitled"
+        } else {
+            self.title = webView.title ?? "Untitled"
+        }
         self.canGoBack = webView.canGoBack
         self.canGoForward = webView.canGoForward
         getFavicon()
