@@ -11,6 +11,9 @@ class TabLocation {
     }
     
     func removeTab(id: UUID) {
+        let tabss = tabs.filter({ $0.id == id })
+        
+        print("removed tab:", tabss)
         tabs.removeAll(where: { $0.id == id })
         print("removed tab")
     }

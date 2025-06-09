@@ -19,9 +19,14 @@ class DragAndDropViewModel {
         
         /// this goes through each item from the dropped payload
         for tab in droppedTabs {
-            if var location =  Alto.shared.getTab(id: tab.id)?.location {
+            if var location = Alto.shared.getTab(id: tab.id)?.location {
                 location.removeTab(id: tab.id)
-                location = tabLocation
+                print("tab droped")
+                print("old loc:", location.tabs)
+                print("new loc:", tabLocation.tabs)
+                Alto.shared.getTab(id: tab.id)?.location = tabLocation
+                
+                
             }
         }
         

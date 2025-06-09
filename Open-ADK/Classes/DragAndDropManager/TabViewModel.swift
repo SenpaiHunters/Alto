@@ -98,3 +98,43 @@ struct TabView: View {
             }
         }
 }
+
+
+
+struct FavoriteView: View {
+    var model: TabViewModel
+    @State var isHovered: Bool = false
+    var body: some View {
+            HStack {
+                model.tabIcon
+                    .resizable()
+                    .scaledToFit()
+            }
+            .padding(4)
+            .aspectRatio(1, contentMode: .fit)
+            .contentShape(Rectangle())
+            .draggable(model.tab) {
+                Rectangle()
+                    .opacity(0)
+            }
+            .gesture(
+                TapGesture(count: 2).onEnded {
+                    
+                }
+            )
+            .simultaneousGesture(
+                TapGesture().onEnded {
+                    model.handleSingleClick()
+                    
+                }
+            )
+            .background(
+                Rectangle()
+                    .fill(.white.opacity(0.2))
+                    .cornerRadius(5)
+            )
+            .onHover { hovered in
+                
+            }
+        }
+}
