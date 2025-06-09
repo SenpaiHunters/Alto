@@ -13,10 +13,11 @@ class AltoTab: NSObject, Identifiable {
     let uiDelegateController = AltoWebViewDelegate()
     let mannager: BrowserTabsManager?
     
-    var title: String = ""
+    var title: String = "Untitled"
     var favicon: Image?
     var canGoBack: Bool = false
     var canGoForward: Bool = false
+    
     var isLoading: Bool = false
     var url: URL? = nil
     
@@ -32,6 +33,13 @@ class AltoTab: NSObject, Identifiable {
         uiDelegateController.tab = self
         
         
+    }
+    
+    deinit {
+        print("deinit")
+        webView.uiDelegate = nil
+        webView.navigationDelegate = nil
+        webView.stopLoading()
     }
     
     func createNewTab(_ url: String, _ configuration: WKWebViewConfiguration, frame: CGRect = .zero) {
@@ -50,6 +58,12 @@ class AltoTab: NSObject, Identifiable {
         Alto.shared.tabs[newTab.id] = newTab
         mannager?.currentSpace.currentTab = newTab
     }
+    
+    func closeTab() {
+        Alto.shared.removeTab(self.id)
+        self.location?.removeTab(id: self.id)
+        self.mannager?.currentSpace.currentTab = nil
+    }
 }
 
 
@@ -58,6 +72,8 @@ extension AltoTab: WKNavigationDelegate, WKUIDelegate {
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         print("FINISHED LOADING")
         self.title = webView.title ?? ""
+        self.canGoBack = webView.canGoBack
+        self.canGoForward = webView.canGoForward
         getFavicon()
     }
 
@@ -65,6 +81,8 @@ extension AltoTab: WKNavigationDelegate, WKUIDelegate {
         print("STARTED LOADING")
         self.isLoading = false
         self.url = webView.url
+        self.canGoBack = webView.canGoBack
+        self.canGoForward = webView.canGoForward
     }
     
     func getFavicon() {

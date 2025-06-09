@@ -7,11 +7,11 @@ class TabLocation {
     func appendTabRep(_ tabRep: TabRepresentation) {
         self.tabs.append(tabRep)
         let tab = Alto.shared.getTab(id: tabRep.id)
-        tab.location = self
+        tab?.location = self
     }
     
-    func removeTab(tabRep: TabRepresentation) {
-        tabs.removeAll(where: { $0.id == tabRep.id })
+    func removeTab(id: UUID) {
+        tabs.removeAll(where: { $0.id == id })
         print("removed tab")
     }
 }

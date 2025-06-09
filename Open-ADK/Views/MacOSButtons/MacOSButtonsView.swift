@@ -1,6 +1,43 @@
 
 import SwiftUI
 
+struct MacButtonsViewNew: View {
+    var body: some View {
+        ZStack() {
+            NSMacButtons()
+        }
+    }
+}
+
+import AppKit
+
+struct NSMacButtons: NSViewRepresentable {
+    var btnTypes: [NSWindow.ButtonType] = [.closeButton, .miniaturizeButton, .zoomButton]
+    
+    
+    func makeNSView(context: Context) -> NSView {
+        let stack = NSStackView()
+        let viewButtons: [NSButton?]
+        stack.spacing = 6
+        
+        viewButtons = btnTypes.map({ NSWindow.standardWindowButton( $0, for: .titled) })
+
+        for button in viewButtons {
+            if let button = button {
+                stack.addArrangedSubview(button)
+            }
+        }
+        
+        return stack
+    }
+    
+    func updateNSView(_ nsView: NSView, context: Context) {
+        
+    }
+}
+
+
+
 @Observable
 class MacButtonsViewModel {
     let windowPaddingOffset: CGFloat = 2

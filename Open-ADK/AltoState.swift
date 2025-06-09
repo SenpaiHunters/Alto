@@ -9,6 +9,7 @@ import Observation
 class AltoState {
     var data: Alto
     var sidebar = false
+    var Topbar: AltoTopBarViewModel.TopbarState = .active
     var browserTabsManager: BrowserTabsManager = BrowserTabsManager()
     var draggedTab: TabRepresentation?
     
@@ -20,4 +21,14 @@ class AltoState {
     func setup(webView: WKWebView) {
         data.cookieManager.setupCookies(for: webView)
     }
+    
+    func toggleTopbar() {
+        switch Topbar {
+        case .hidden:
+            Topbar = .active
+        case .active:
+            Topbar = .hidden
+        }
+    }
+
 }

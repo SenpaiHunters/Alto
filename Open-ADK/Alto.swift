@@ -29,15 +29,14 @@ class Alto {
         // WKWebsiteDataStore.default()._setResourceLoadStatisticsEnabled(false)
     }
     
-    func getTab(id: UUID) -> AltoTab {
+    func getTab(id: UUID) -> AltoTab? {
         let tab = self.tabs.first(where: { $0.key == id})?.value
-        return tab!
+        return tab
     }
     
-    func removeTab(_ tabRep: TabRepresentation) {
-        let tab = self.getTab(id:tabRep.id)
-        tab.location?.removeTab(tabRep: tabRep)
-        self.tabs.removeValue(forKey: tabRep.id)
-        
+    func removeTab(_ id: UUID) {
+        let tab = self.getTab(id: id)
+        tab?.location?.removeTab(id:id)
+        self.tabs.removeValue(forKey: id)
     }
 }

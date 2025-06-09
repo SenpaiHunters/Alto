@@ -7,11 +7,18 @@ class TabViewModel {
     var tab: TabRepresentation
     var onDragStart: (() -> Void)?
     var tabTitle: String {
-        Alto.shared.getTab(id: tab.id).title
+        Alto.shared.getTab(id: tab.id)?.title ?? "Untitled"
     }
     var tabIcon: Image {
-        Alto.shared.getTab(id: tab.id).favicon ?? Image(systemName: "square")
+        Alto.shared.getTab(id: tab.id)?.favicon ?? Image(systemName: "square.fill")
     }
+    
+    var altoTab: AltoTab? {
+        return Alto.shared.getTab(id: tab.id)
+    }
+    
+    var closeIcon: Image = Image(systemName: "xmark")
+    
     init(state: AltoState, tab: TabRepresentation, onDragStart: (() -> Void)? = nil) {
         self.state = state
         self.tab = tab
@@ -31,16 +38,37 @@ class TabViewModel {
     func handleDragStart() {
         self.onDragStart?()
     }
+    
+    func handleClose() {
+        self.altoTab?.closeTab()
+    }
 }
 
 struct TabView: View {
     var model: TabViewModel
+    @State var isHovered: Bool = false
     var body: some View {
             HStack {
                 model.tabIcon
                     .resizable()
                     .scaledToFit()
                 Text(model.tabTitle)
+                
+                Spacer()
+                
+                Button(action:{model.handleClose()}) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 5)
+                            .fill(isHovered ? .gray.opacity(0.1) : .gray.opacity(0))
+                        model.closeIcon
+                    }
+                    .animation(.bouncy, value: isHovered)
+                    .onHover { hovered in
+                        isHovered = hovered
+                    }
+                }
+                .buttonStyle(PlainButtonStyle())
+                .aspectRatio(1/1, contentMode: .fit)
             }
             .padding(4)
             .frame(width: 150)
