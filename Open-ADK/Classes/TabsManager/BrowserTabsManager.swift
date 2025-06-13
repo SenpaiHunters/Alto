@@ -40,7 +40,7 @@ class BrowserTabsManager {
         }
         
         let newTab = AltoTab(webView: newWebView, state: state)
-        let tabRep = TabRepresentation(id: newTab.id)
+        let tabRep = TabRepresentation(id: newTab.id, index: tabLocation.tabs.count)
         Alto.shared.tabs[newTab.id] = newTab
         tabLocation.appendTabRep(tabRep)
         self.currentSpace.currentTab = newTab

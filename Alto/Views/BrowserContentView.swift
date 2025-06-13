@@ -16,7 +16,7 @@ struct BrowserContentView: View {
                     
                     NSWebView(webView: currentTab?.webView)
                         .id(currentTab?.id)
-                        .cornerRadius(5)
+                        .cornerRadius(10)
                     
                     if currentTab == nil {
                         Image("Logo")

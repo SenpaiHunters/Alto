@@ -19,7 +19,7 @@ class AltoWebViewDelegate: NSObject, WKNavigationDelegate, WKUIDelegate {
             
             if let url = navigationAction.request.url?.absoluteString {
                 let newTab = AltoTab(webView: newWebView, state: tab?.state ?? AltoState())
-                let tabRep = TabRepresentation(id:newTab.id)
+                let tabRep = TabRepresentation(id:newTab.id, index: tab?.mannager?.currentSpace.normal.tabs.count ?? 0)
                 Alto.shared.tabs[newTab.id] = newTab
                 
                 tab?.mannager?.currentSpace.normal.appendTabRep(tabRep)
@@ -39,7 +39,7 @@ class AltoWebViewNavagationDelegate: NSObject, WKNavigationDelegate, WKUIDelegat
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         print("Finished loading...")
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            // Alto.shared.contextManager.pullContextFromPage(for: webView)
+        
         }
     }
 }

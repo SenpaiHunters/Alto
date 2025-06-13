@@ -53,7 +53,7 @@ class AltoTab: NSObject, Identifiable {
         }
         print("called")
         let newTab = AltoTab(webView: newWebView, state: state)
-        let tabRep = TabRepresentation(id: newTab.id)
+        let tabRep = TabRepresentation(id: newTab.id, index: mannager?.currentSpace.normal.tabs.count ?? 0)
         mannager?.currentSpace.normal.appendTabRep(tabRep)
         Alto.shared.tabs[newTab.id] = newTab
         mannager?.currentSpace.currentTab = newTab
@@ -78,7 +78,13 @@ extension AltoTab: WKNavigationDelegate, WKUIDelegate {
         }
         self.canGoBack = webView.canGoBack
         self.canGoForward = webView.canGoForward
+
         getFavicon()
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            print("start")
+            // Alto.shared.contextManager.pullContextFromPage(for: webView)
+        }
     }
 
     func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {

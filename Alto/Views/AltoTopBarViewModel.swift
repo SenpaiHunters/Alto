@@ -24,7 +24,7 @@ struct AltoTopBar: View {
     var model: AltoTopBarViewModel
     
     var body: some View {
-            HStack {
+            HStack (spacing: 2) {
                 
                 // MacButtonsViewNew()
                 MacButtonsView()
@@ -44,7 +44,7 @@ struct AltoTopBar: View {
                 .frame(height: 30)
                 .fixedSize()
                 
-                AltoFavoritesView(DragAndDropViewModel(state: model.state, tabLocation: model.state.browserTabsManager.favorites))
+                FavoriteDropZoneView(model:FavoriteDropZoneViewModel(state: model.state, tabLocation: model.state.browserTabsManager.favorites))
                     .frame(height: 30)
                     .fixedSize()
                 
@@ -52,7 +52,8 @@ struct AltoTopBar: View {
                     Divider().frame(width: 2)
                 }
                 
-                AltoNormalView(DragAndDropViewModel(state: model.state, tabLocation: model.state.browserTabsManager.currentSpace.normal))
+                DropZoneView(model: DropZoneViewModel(state: model.state, tabLocation: model.state.browserTabsManager.currentSpace.normal))
+                    .frame(height: 30)
                     .frame(maxWidth: .infinity)
                     .layoutPriority(1)
                 
@@ -68,9 +69,9 @@ struct AltoTopBar: View {
 
 struct AltoFavoritesView: View {
     @State var isZoneTargeted: Bool = false
-    var model: DragAndDropViewModel
+    var model: DropZoneViewModel
     
-    init(_ model: DragAndDropViewModel) {
+    init(_ model: DropZoneViewModel) {
         self.model = model
     }
     
@@ -80,9 +81,7 @@ struct AltoFavoritesView: View {
                 let row = Array(repeating: GridItem(spacing: 1), count: 1)
                 LazyHGrid(rows: row, spacing: 5) {
                     ForEach(model.tabLocation.tabs, id: \.id) { tabItem in
-                        FavoriteView(model: TabViewModel(state: model.state, tab: tabItem, onDragStart: {
-                            model.state.draggedTab = tabItem
-                        }))
+                        FavoriteView(model: TabViewModel(state: model.state, draggingViewModel: model, tab: tabItem))
                         .dropDestination(for: TabRepresentation.self) { item, location in
                             return false
                         } isTargeted: { status in
@@ -113,11 +112,11 @@ struct AltoFavoritesView: View {
     }
 }
 
-struct AltoNormalView: View {
+struct AltoNormalViewOld: View {
     @State var isZoneTargeted: Bool = false
-    var model: DragAndDropViewModel
+    var model: DropZoneViewModel
     
-    init(_ model: DragAndDropViewModel) {
+    init(_ model: DropZoneViewModel) {
         self.model = model
     }
     
@@ -127,9 +126,7 @@ struct AltoNormalView: View {
                 let row = Array(repeating: GridItem(spacing: 1), count: 1)
                 LazyHGrid(rows: row, spacing: 5) {
                     ForEach(model.tabLocation.tabs, id: \.id) { tabItem in
-                        TabView(model: TabViewModel(state: model.state, tab: tabItem, onDragStart: {
-                            model.state.draggedTab = tabItem
-                        }))
+                        AltoTabView(model: TabViewModel(state: model.state, draggingViewModel: model, tab: tabItem))
                         .dropDestination(for: TabRepresentation.self) { item, location in
                             return false
                         } isTargeted: { status in
@@ -159,3 +156,37 @@ struct AltoNormalView: View {
             }
     }
 }
+
+
+
+
+struct AltoNormalView: View {
+    @State var isZoneTargeted: Bool = false
+    var model: DropZoneViewModel
+    
+    init(_ model: DropZoneViewModel) {
+        self.model = model
+    }
+    
+    var body: some View {
+       
+            HStack {
+                let row = Array(repeating: GridItem(spacing: 1), count: 1)
+                LazyHGrid(rows: row, spacing: 5) {
+                    ForEach(model.tabLocation.tabs, id: \.id) { tabItem in
+                        AltoTabView(model: TabViewModel(state: model.state, draggingViewModel: model, tab: tabItem))
+                            
+                    }
+                }
+                Spacer()
+            }
+            
+            .dropDestination(for: TabRepresentation.self) { droppedTabs, location in
+                model.onDrop(droppedTabs: droppedTabs, location: location)
+            } isTargeted: { isTargeted in
+                self.isZoneTargeted = isTargeted
+            }
+    }
+}
+
+

@@ -1,11 +1,22 @@
 //
-
-
+import SwiftUI
 
 @Observable
-class SettingsManager {
+class PreferencesManager {
+    var shared: PreferencesManager = PreferencesManager()
     
-    init() {
+    var altoAppearance: AltoAppearance = .dark
+    
+    private init() {
         // this would normaly pull settings from storage
+        
+        UserDefaults.standard.set(altoAppearance.rawValue, forKey: "TEST")
     }
+}
+
+
+enum AltoAppearance: Int {
+    case dark
+    case light
+    case system
 }
