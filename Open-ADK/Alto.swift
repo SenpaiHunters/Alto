@@ -13,7 +13,6 @@ class Alto {
     let windowManager: WindowManager
     let cookieManager: CookiesManager
     let contextManager: NewContextManager
-    let settingsManager: SettingsManager
     
     private init() {
         // These are state agnostic managers that will be used no matter what
@@ -21,7 +20,6 @@ class Alto {
         windowManager = WindowManager()
         cookieManager = CookiesManager()
         contextManager = NewContextManager()
-        settingsManager = SettingsManager()
 
         
         // Uses Apple private APIs to allow 3rd party cookies to work
