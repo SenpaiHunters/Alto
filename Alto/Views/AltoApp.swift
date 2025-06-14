@@ -6,6 +6,9 @@ struct AltoApp: App {
     
     var body: some Scene {
         // No default window
-        Settings {}
+        Settings {
+            SettingsView()
+        }
     }
 }
+

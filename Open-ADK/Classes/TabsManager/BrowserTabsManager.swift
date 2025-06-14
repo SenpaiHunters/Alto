@@ -13,13 +13,26 @@ class BrowserTabsManager {
     var currentSpace: Space {
         return Alto.shared.spaces[spaceIndex]
     }
+    // ToDo: make a dedicated search manager
+    var searchEngineURL: String {
+        switch PreferencesManager.shared.searchEngine {
+        case .brave:
+            return "https://search.brave.com/"
+        case .duckduckgo:
+            return "https://duckduckgo.com/?q="
+        case .google:
+            return "https://www.google.com"
+        default:
+            return "https://www.google.com"
+        }
+    }
     
     init(state: AltoState? = nil) {
         self.state = state
         // self.createNewTab()
     }
     
-    func createNewTab(url: String = "https://www.google.com", frame: CGRect = .zero, configuration: WKWebViewConfiguration = AltoWebViewConfigurationBase(), location: Location = .normal) {
+    func createNewTab(url: String? = nil, frame: CGRect = .zero, configuration: WKWebViewConfiguration = AltoWebViewConfigurationBase(), location: Location = .normal) {
         guard let state = self.state else {
             return
         }
@@ -34,7 +47,9 @@ class BrowserTabsManager {
             case .normal: self.currentSpace.normal
             }
         }
-        if let url = URL(string: url) {
+        let urlString = url ?? searchEngineURL
+        
+        if let url = URL(string: urlString) {
             let request = URLRequest(url: url)
             newWebView.load(request)
         }

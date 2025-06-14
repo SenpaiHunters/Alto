@@ -359,7 +359,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "Alto-Browser.Alto";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_OBJC_BRIDGING_HEADER = "/Users/hensonliga/Development/AltoBrowser/Alto/Open-ADK/ObjCBridge/Alto-Bridging-Header.m";
+				SWIFT_OBJC_BRIDGING_HEADER = "Open-ADK/ObjCBridge/Alto-Bridging-Header.m";
 				SWIFT_VERSION = 5.0;
 			};
 			name = Development;
@@ -540,7 +540,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "Alto-Browser.Alto";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_OBJC_BRIDGING_HEADER = "/Users/hensonliga/Development/AltoBrowser/Alto/Open-ADK/ObjCBridge/Alto-Bridging-Header.m";
+				SWIFT_OBJC_BRIDGING_HEADER = "Open-ADK/ObjCBridge/Alto-Bridging-Header.m";
 				SWIFT_VERSION = 5.0;
 			};
 			name = Debug;
@@ -569,7 +569,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "Alto-Browser.Alto";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_OBJC_BRIDGING_HEADER = "/Users/hensonliga/Development/AltoBrowser/Alto/Open-ADK/ObjCBridge/Alto-Bridging-Header.m";
+				SWIFT_OBJC_BRIDGING_HEADER = "Open-ADK/ObjCBridge/Alto-Bridging-Header.m";
 				SWIFT_VERSION = 5.0;
 			};
 			name = Release;

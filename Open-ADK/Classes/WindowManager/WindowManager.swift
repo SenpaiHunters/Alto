@@ -20,6 +20,7 @@ class WindowManager {
             contentRect: NSRect(x: 150, y: 150, width: 800, height: 600)
         )
         
+        
         window.orderFront(nil)
     }
     
@@ -30,6 +31,7 @@ class WindowManager {
 class WindowInfo {
     var id = UUID()
 }
+
 
 /// An Window class with extra features
 ///
@@ -59,6 +61,7 @@ class AltoWindow: NSWindow {
         }
         
         let info = WindowInfo()
+        
         
         let mainView = BrowserView()
             .environment(info)
