@@ -19,6 +19,15 @@ struct TabRepresentation: Transferable, Codable, Comparable, Hashable, Identifia
     static func < (lhs: TabRepresentation, rhs: TabRepresentation) -> Bool {
         return lhs.id == rhs.id
     }
+    
+    func toItemProvider() -> NSItemProvider {
+        print("dragged")
+        if let data = try? JSONEncoder().encode(self) {
+            return NSItemProvider(item: data as NSData, typeIdentifier: "public.json")
+        }
+        
+        return NSItemProvider()
+    }
 }
 
 /// extentds the Unifide type identifier to add the tabItem structure

@@ -59,6 +59,3 @@ final class PreferencesManager {
 enum SearchEngines {
     case google, duckduckgo, brave
 }
-
-
-

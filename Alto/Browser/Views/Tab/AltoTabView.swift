@@ -20,7 +20,7 @@ struct AltoTabView: View {
         .frame(width: 150)
         .background(
             RoundedRectangle(cornerRadius: 8)
-                .fill((model.state.browserTabsManager.currentSpace.currentTab?.id == model.tab.id || model.isHovered ) ? .gray.opacity(0.4) : .gray.opacity(0))
+                .fill((model.state.browserTabsManager.currentSpace.currentTab?.id == model.tab.id || model.isHovered ) ? .gray.opacity(0.4) : .gray.opacity(0)) // lol i need to fix this
         )
         .contentShape(Rectangle()) // added to the background clickable
         .gesture(
@@ -33,11 +33,11 @@ struct AltoTabView: View {
                 model.handleSingleClick()
             }
         )
+        .onHover { hovered in
+            model.isHovered = hovered
+        }
         .draggable(model.tab) {
-            AltoTabViewDragged(model: model)
+             AltoTabViewDragged(model: model)
         }
     }
 }
-
-
-

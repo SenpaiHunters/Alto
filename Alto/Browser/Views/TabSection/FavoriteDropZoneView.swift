@@ -24,7 +24,7 @@ struct FavoriteDropZoneView: View {
             
             if !model.showEmptyDropIndicator {
                 if !model.isEmpty {
-                    hoverZoneView(model: HoverZoneViewModel(state: model.state, tabLocation: model.tabLocation, isFirst: true))
+                        hoverZoneView(model: HoverZoneViewModel(state: model.state, tabLocation: model.tabLocation, placement: .start))
                     
                     ForEach(Array(model.displayedTabs.enumerated()), id: \.element.id) { index, tabItem in
                         AltoTabView(model: TabViewModel(state: model.state, draggingViewModel: model, tab: tabItem))

@@ -10,7 +10,10 @@ struct AltoTabViewDragged: View {
             faviconImage(model: model)
             
             Text(model.tabTitle)
+            
             Spacer()
+            
+            closeButton(model: model)
         }
         .padding(4)
         .frame(width: 150)

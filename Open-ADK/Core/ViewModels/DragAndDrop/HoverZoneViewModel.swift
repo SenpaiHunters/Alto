@@ -4,32 +4,41 @@
 
 @Observable
 class HoverZoneViewModel {
+    enum ZonePlacement {
+        case start, central, end
+    }
+    
     var tabLocation: TabLocation
     var state: AltoState
-    var isFirst: Bool
+    var placement: ZonePlacement
     var index: Int
     
     var isTargeted: Bool = false
     
     var width: CGFloat {
-        if self.isFirst {
+        if self.placement == .start {
             return 20
         }
         return 40
     }
     
     var offset: CGSize {
-        if self.isFirst {
+        if self.placement == .start {
             return CGSize(width: 10, height: 0)
         }
         return CGSize(width: 0, height: 0)
     }
     
-    init(state: AltoState, tabLocation: TabLocation, index: Int = 0, isFirst: Bool = false) {
+    init(state: AltoState, tabLocation: TabLocation, index: Int = 0, placement: ZonePlacement = .central) {
         self.state = state
         self.tabLocation = tabLocation
-        self.isFirst = isFirst
+        self.placement = placement
         self.index = index
+        
+        if index == tabLocation.tabs.count {
+            print("EQUAL COUNT")
+            self.placement = .end
+        }
     }
     
     
