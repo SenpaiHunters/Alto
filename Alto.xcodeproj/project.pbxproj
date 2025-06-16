@@ -7,20 +7,13 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		C49FA21D2E006FAC008687DC /* OpenADK.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C49FA2142E006FA3008687DC /* OpenADK.framework */; };
-		C49FA21E2E006FAC008687DC /* OpenADK.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = C49FA2142E006FA3008687DC /* OpenADK.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		C4AFFDF22E007520001D60F8 /* OpenADK.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C4D5A48C2DFFD50300002E71 /* OpenADK.framework */; };
+		C4AFFDF32E007520001D60F8 /* OpenADK.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = C4D5A48C2DFFD50300002E71 /* OpenADK.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		C4D5A48B2DFFD4E700002E71 /* SwiftSoup in Frameworks */ = {isa = PBXBuildFile; productRef = C4D5A48A2DFFD4E700002E71 /* SwiftSoup */; };
 		C4E36BE02DCEDCB200B049A3 /* Algorithms in Frameworks */ = {isa = PBXBuildFile; productRef = C4E36BDF2DCEDCB200B049A3 /* Algorithms */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
-		C49FA2132E006FA3008687DC /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = C49326392DFFC95800A425E2 /* OpenADK.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = C449FA3E2DFFCFC400C05EF4;
-			remoteInfo = OpenADK;
-		};
 		C4E36B5F2DCEB6C300B049A3 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = C4E36B452DCEB6C200B049A3 /* Project object */;
@@ -38,13 +31,13 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
-		C49FA21F2E006FAC008687DC /* Embed Frameworks */ = {
+		C4AFFDF42E007520001D60F8 /* Embed Frameworks */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				C49FA21E2E006FAC008687DC /* OpenADK.framework in Embed Frameworks */,
+				C4AFFDF32E007520001D60F8 /* OpenADK.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -53,7 +46,6 @@
 
 /* Begin PBXFileReference section */
 		C49326392DFFC95800A425E2 /* OpenADK.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = OpenADK.xcodeproj; sourceTree = "<group>"; };
-		C49FA2202E0070C2008687DC /* OpenADK */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = OpenADK; sourceTree = "<group>"; };
 		C4D5A48C2DFFD50300002E71 /* OpenADK.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = OpenADK.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		C4E36B4D2DCEB6C200B049A3 /* Alto.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Alto.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C4E36B5E2DCEB6C300B049A3 /* AltoTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AltoTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -61,11 +53,6 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		C4D5A3492DFFD0C100002E71 /* Open-ADK */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = "Open-ADK";
-			sourceTree = "<group>";
-		};
 		C4DB134C2DEFBA3600B5D483 /* Alto */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = Alto;
@@ -79,7 +66,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				C4E36BE02DCEDCB200B049A3 /* Algorithms in Frameworks */,
-				C49FA21D2E006FAC008687DC /* OpenADK.framework in Frameworks */,
+				C4AFFDF22E007520001D60F8 /* OpenADK.framework in Frameworks */,
 				C4D5A48B2DFFD4E700002E71 /* SwiftSoup in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -104,7 +91,6 @@
 		C493263B2DFFC95800A425E2 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				C49FA2142E006FA3008687DC /* OpenADK.framework */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -120,10 +106,8 @@
 		C4E36B442DCEB6C200B049A3 = {
 			isa = PBXGroup;
 			children = (
-				C49FA2202E0070C2008687DC /* OpenADK */,
 				C4DB134C2DEFBA3600B5D483 /* Alto */,
 				C4E36B4E2DCEB6C200B049A3 /* Products */,
-				C4D5A3492DFFD0C100002E71 /* Open-ADK */,
 				C4D5A4892DFFD4D000002E71 /* Frameworks */,
 			);
 			sourceTree = "<group>";
@@ -148,14 +132,13 @@
 				C4E36B492DCEB6C200B049A3 /* Sources */,
 				C4E36B4A2DCEB6C200B049A3 /* Frameworks */,
 				C4E36B4B2DCEB6C200B049A3 /* Resources */,
-				C49FA21F2E006FAC008687DC /* Embed Frameworks */,
+				C4AFFDF42E007520001D60F8 /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				C4D5A3492DFFD0C100002E71 /* Open-ADK */,
 				C4DB134C2DEFBA3600B5D483 /* Alto */,
 			);
 			name = Alto;
@@ -260,16 +243,6 @@
 			);
 		};
 /* End PBXProject section */
-
-/* Begin PBXReferenceProxy section */
-		C49FA2142E006FA3008687DC /* OpenADK.framework */ = {
-			isa = PBXReferenceProxy;
-			fileType = wrapper.framework;
-			path = OpenADK.framework;
-			remoteRef = C49FA2132E006FA3008687DC /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
-/* End PBXReferenceProxy section */
 
 /* Begin PBXResourcesBuildPhase section */
 		C4E36B4B2DCEB6C200B049A3 /* Resources */ = {
