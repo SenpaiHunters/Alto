@@ -55,7 +55,6 @@
 		C49326392DFFC95800A425E2 /* OpenADK.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = OpenADK.xcodeproj; sourceTree = "<group>"; };
 		C49FA2202E0070C2008687DC /* OpenADK */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = OpenADK; sourceTree = "<group>"; };
 		C4D5A48C2DFFD50300002E71 /* OpenADK.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = OpenADK.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		C4D5A4E52E006D4D00002E71 /* OpenADK.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = OpenADK.xcodeproj; path = ../OpenADK/OpenADK.xcodeproj; sourceTree = SOURCE_ROOT; };
 		C4E36B4D2DCEB6C200B049A3 /* Alto.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Alto.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C4E36B5E2DCEB6C300B049A3 /* AltoTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AltoTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		C4E36B682DCEB6C300B049A3 /* AltoUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AltoUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -126,7 +125,6 @@
 				C4E36B4E2DCEB6C200B049A3 /* Products */,
 				C4D5A3492DFFD0C100002E71 /* Open-ADK */,
 				C4D5A4892DFFD4D000002E71 /* Frameworks */,
-				C4D5A4E52E006D4D00002E71 /* OpenADK.xcodeproj */,
 			);
 			sourceTree = "<group>";
 		};
