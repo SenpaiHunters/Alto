@@ -95,6 +95,14 @@ extension AltoTab: WKNavigationDelegate, WKUIDelegate {
         self.canGoForward = webView.canGoForward
     }
     
+    func webViewDidClose(_ webView: WKWebView) {
+        print("YES")
+    }
+    
+    func webView(_ webView: WKWebView, willPerformNavigationAction action: WKNavigationAction) {
+        print("REDIRECTED?????????????????")
+    }
+    
     func getFavicon() {
         webView.evaluateJavaScript(
             "document.querySelector(\"link[rel~='icon']\")?.href"

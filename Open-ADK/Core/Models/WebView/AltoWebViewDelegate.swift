@@ -12,11 +12,22 @@ class AltoWebViewDelegate: NSObject, WKNavigationDelegate, WKUIDelegate {
                  createWebViewWith configuration: WKWebViewConfiguration,
                  for navigationAction: WKNavigationAction,
                  windowFeatures: WKWindowFeatures) -> WKWebView? {
+        print("OPEN WINDOW")
         if navigationAction.targetFrame == nil {
-            print("🆕 New tab or window requested: \(navigationAction.request.url?.absoluteString ?? "unknown URL")")
+            print("New tab or window requested: \(navigationAction.request.url?.absoluteString ?? "unknown URL")")
             
             let newWebView = AltoWebView(frame: .zero, configuration: configuration)
             
+            print("URL:", navigationAction.request.url)
+            if navigationAction.request.url == nil {
+                return nil
+            }
+            if navigationAction.navigationType == .other {
+                print("THe browser has requested a login expereicnce")
+            }
+            if navigationAction.request.url?.absoluteString == "" {
+                return nil
+            }
             if let url = navigationAction.request.url?.absoluteString {
                 let newTab = AltoTab(webView: newWebView, state: tab?.state ?? AltoState())
                 let tabRep = TabRepresentation(id:newTab.id, index: tab?.mannager?.currentSpace.normal.tabs.count ?? 0)
@@ -26,12 +37,16 @@ class AltoWebViewDelegate: NSObject, WKNavigationDelegate, WKUIDelegate {
                 tab?.mannager?.currentSpace.currentTab = newTab
                 Alto.shared.cookieManager.setupCookies(for: newWebView)
                 
-                newWebView.load(URLRequest(url: URL(string: url)!))
+                // newWebView.load(navigationAction.request)
             }
             return newWebView
         }
         return nil
     }
+    
+    func webViewDidClose(_ webView: WKWebView) {
+            print("CLOSE")
+        }
 }
 
 class AltoWebViewNavagationDelegate: NSObject, WKNavigationDelegate, WKUIDelegate {

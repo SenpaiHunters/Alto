@@ -1,6 +1,6 @@
 //
 
-
+import OpenADK
 
 /// Handles major portions of tha app lifecycle
 ///
@@ -8,9 +8,10 @@
 /// We use a WindowManager class but this is needed to handling opening windows according to the app lifecycle
 class AppDelegate: NSObject, NSApplicationDelegate {
     var windowManager = Alto.shared
-
+    var person = Testo()
     func applicationDidFinishLaunching(_ notification: Notification) {
         print("App Launched")
+        
         Alto.shared.windowManager.createWindow()
     }
 }

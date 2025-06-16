@@ -23,8 +23,8 @@ class Alto {
 
         
         // Uses Apple private APIs to allow 3rd party cookies to work
-        // WKWebsiteDataStore.nonPersistent()._setResourceLoadStatisticsEnabled(false)
-        // WKWebsiteDataStore.default()._setResourceLoadStatisticsEnabled(false)
+         WKWebsiteDataStore.nonPersistent()._setResourceLoadStatisticsEnabled(false)
+         WKWebsiteDataStore.default()._setResourceLoadStatisticsEnabled(false)
     }
     
     func getTab(id: UUID) -> AltoTab? {

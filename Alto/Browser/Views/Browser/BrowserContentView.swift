@@ -22,6 +22,7 @@ struct BrowserContentView: View {
                         Image("Logo")
                             .opacity(0.5)
                             .blendMode(.softLight)
+                            .scaleEffect(1.3)
                     }
                 }
             }

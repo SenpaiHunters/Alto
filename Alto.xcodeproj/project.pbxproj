@@ -7,7 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		C4B4A72F2DEBB72D001EADBE /* SwiftSoup in Frameworks */ = {isa = PBXBuildFile; productRef = C4B4A72E2DEBB72D001EADBE /* SwiftSoup */; };
+		C4D5A48B2DFFD4E700002E71 /* SwiftSoup in Frameworks */ = {isa = PBXBuildFile; productRef = C4D5A48A2DFFD4E700002E71 /* SwiftSoup */; };
+		C4D5A48D2DFFD50300002E71 /* OpenADK.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C4D5A48C2DFFD50300002E71 /* OpenADK.framework */; };
+		C4D5A48E2DFFD50300002E71 /* OpenADK.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = C4D5A48C2DFFD50300002E71 /* OpenADK.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		C4E36BE02DCEDCB200B049A3 /* Algorithms in Frameworks */ = {isa = PBXBuildFile; productRef = C4E36BDF2DCEDCB200B049A3 /* Algorithms */; };
 /* End PBXBuildFile section */
 
@@ -28,14 +30,30 @@
 		};
 /* End PBXContainerItemProxy section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		C4D5A48F2DFFD50300002E71 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				C4D5A48E2DFFD50300002E71 /* OpenADK.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
+		C49326392DFFC95800A425E2 /* OpenADK.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = OpenADK.xcodeproj; sourceTree = "<group>"; };
+		C4D5A48C2DFFD50300002E71 /* OpenADK.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = OpenADK.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		C4E36B4D2DCEB6C200B049A3 /* Alto.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Alto.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C4E36B5E2DCEB6C300B049A3 /* AltoTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AltoTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		C4E36B682DCEB6C300B049A3 /* AltoUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AltoUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		C4B155632DE6C7E7005493CE /* Open-ADK */ = {
+		C4D5A3492DFFD0C100002E71 /* Open-ADK */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = "Open-ADK";
 			sourceTree = "<group>";
@@ -53,7 +71,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				C4E36BE02DCEDCB200B049A3 /* Algorithms in Frameworks */,
-				C4B4A72F2DEBB72D001EADBE /* SwiftSoup in Frameworks */,
+				C4D5A48D2DFFD50300002E71 /* OpenADK.framework in Frameworks */,
+				C4D5A48B2DFFD4E700002E71 /* SwiftSoup in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -74,12 +93,28 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		C493263B2DFFC95800A425E2 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		C4D5A4892DFFD4D000002E71 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				C4D5A48C2DFFD50300002E71 /* OpenADK.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		C4E36B442DCEB6C200B049A3 = {
 			isa = PBXGroup;
 			children = (
 				C4DB134C2DEFBA3600B5D483 /* Alto */,
-				C4B155632DE6C7E7005493CE /* Open-ADK */,
 				C4E36B4E2DCEB6C200B049A3 /* Products */,
+				C4D5A3492DFFD0C100002E71 /* Open-ADK */,
+				C4D5A4892DFFD4D000002E71 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -103,19 +138,20 @@
 				C4E36B492DCEB6C200B049A3 /* Sources */,
 				C4E36B4A2DCEB6C200B049A3 /* Frameworks */,
 				C4E36B4B2DCEB6C200B049A3 /* Resources */,
+				C4D5A48F2DFFD50300002E71 /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				C4B155632DE6C7E7005493CE /* Open-ADK */,
+				C4D5A3492DFFD0C100002E71 /* Open-ADK */,
 				C4DB134C2DEFBA3600B5D483 /* Alto */,
 			);
 			name = Alto;
 			packageProductDependencies = (
 				C4E36BDF2DCEDCB200B049A3 /* Algorithms */,
-				C4B4A72E2DEBB72D001EADBE /* SwiftSoup */,
+				C4D5A48A2DFFD4E700002E71 /* SwiftSoup */,
 			);
 			productName = Alto;
 			productReference = C4E36B4D2DCEB6C200B049A3 /* Alto.app */;
@@ -195,11 +231,17 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				C4E36BDE2DCEDCB200B049A3 /* XCRemoteSwiftPackageReference "swift-algorithms" */,
-				C4B4A72D2DEBB72D001EADBE /* XCRemoteSwiftPackageReference "SwiftSoup" */,
+				C4D5A3642DFFD37C00002E71 /* XCRemoteSwiftPackageReference "SwiftSoup" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = C4E36B4E2DCEB6C200B049A3 /* Products */;
 			projectDirPath = "";
+			projectReferences = (
+				{
+					ProductGroup = C493263B2DFFC95800A425E2 /* Products */;
+					ProjectRef = C49326392DFFC95800A425E2 /* OpenADK.xcodeproj */;
+				},
+			);
 			projectRoot = "";
 			targets = (
 				C4E36B4C2DCEB6C200B049A3 /* Alto */,
@@ -688,12 +730,12 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		C4B4A72D2DEBB72D001EADBE /* XCRemoteSwiftPackageReference "SwiftSoup" */ = {
+		C4D5A3642DFFD37C00002E71 /* XCRemoteSwiftPackageReference "SwiftSoup" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/scinfu/SwiftSoup.git";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 2.8.7;
+				minimumVersion = 2.8.8;
 			};
 		};
 		C4E36BDE2DCEDCB200B049A3 /* XCRemoteSwiftPackageReference "swift-algorithms" */ = {
@@ -707,9 +749,9 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		C4B4A72E2DEBB72D001EADBE /* SwiftSoup */ = {
+		C4D5A48A2DFFD4E700002E71 /* SwiftSoup */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = C4B4A72D2DEBB72D001EADBE /* XCRemoteSwiftPackageReference "SwiftSoup" */;
+			package = C4D5A3642DFFD37C00002E71 /* XCRemoteSwiftPackageReference "SwiftSoup" */;
 			productName = SwiftSoup;
 		};
 		C4E36BDF2DCEDCB200B049A3 /* Algorithms */ = {
