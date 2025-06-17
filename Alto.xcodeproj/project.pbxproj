@@ -48,22 +48,9 @@
 		C4E36B682DCEB6C300B049A3 /* AltoUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AltoUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
-/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		A7AAB88E2E016166000E2ABC /* Exceptions for "Alto" folder in "Alto" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				"Open-ADK/Core/Models/TabsManager/OpenADK.framework",
-			);
-			target = C4E36B4C2DCEB6C200B049A3 /* Alto */;
-		};
-/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
-
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		C4DB134C2DEFBA3600B5D483 /* Alto */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				A7AAB88E2E016166000E2ABC /* Exceptions for "Alto" folder in "Alto" target */,
-			);
 			path = Alto;
 			sourceTree = "<group>";
 		};
@@ -386,7 +373,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 5TQWF3R63P;
+				DEVELOPMENT_TEAM = X4TGV86MXQ;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				FRAMEWORK_SEARCH_PATHS = (
@@ -394,7 +381,7 @@
 					"$(PROJECT_DIR)/Alto/Open-ADK/Core/Models/TabsManager",
 				);
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = /Users/hensonliga/Development/AltoBrowser/Alto/Alto/Configurations/Info.plist;
+				INFOPLIST_FILE = ./Alto/Configurations/Info.plist;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -571,7 +558,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 5TQWF3R63P;
+				DEVELOPMENT_TEAM = X4TGV86MXQ;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				FRAMEWORK_SEARCH_PATHS = (
@@ -579,7 +566,7 @@
 					"$(PROJECT_DIR)/Alto/Open-ADK/Core/Models/TabsManager",
 				);
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = /Users/hensonliga/Development/AltoBrowser/Alto/Alto/Configurations/Info.plist;
+				INFOPLIST_FILE = ./Alto/Configurations/Info.plist;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -604,7 +591,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 5TQWF3R63P;
+				DEVELOPMENT_TEAM = X4TGV86MXQ;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				FRAMEWORK_SEARCH_PATHS = (
@@ -612,7 +599,7 @@
 					"$(PROJECT_DIR)/Alto/Open-ADK/Core/Models/TabsManager",
 				);
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = /Users/hensonliga/Development/AltoBrowser/Alto/Alto/Configurations/Info.plist;
+				INFOPLIST_FILE = ./Alto/Configurations/Info.plist;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
