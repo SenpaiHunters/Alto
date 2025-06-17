@@ -8,6 +8,6 @@ struct AltoApp: App {
         // No default window
         Settings {
             SettingsView()
-        }.windowStyle(.hiddenTitleBar)
+        }
     }
 }
