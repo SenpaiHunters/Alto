@@ -5,7 +5,7 @@ import SwiftUI
 /// Manages window Creation
 class WindowManager {
     
-    var window: AltoWindow? { // We need to make our own Window type like AltoWindow
+    var window: AltoWindow? { 
         (NSApplication.shared.keyWindow as? AltoWindow) ?? (NSApplication.shared.mainWindow as? AltoWindow)
     }
     var windows: [AltoWindow] = []

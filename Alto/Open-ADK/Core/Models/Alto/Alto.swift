@@ -22,7 +22,7 @@ class Alto {
         contextManager = NewContextManager()
 
         
-        // Uses Apple private APIs to allow 3rd party cookies to work
+        // Uses Apple private APIs to allow 3rd party cookies to work In most cases these should be disabled
          WKWebsiteDataStore.nonPersistent()._setResourceLoadStatisticsEnabled(false)
          WKWebsiteDataStore.default()._setResourceLoadStatisticsEnabled(false)
     }
