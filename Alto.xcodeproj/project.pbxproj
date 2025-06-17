@@ -48,28 +48,22 @@
 		C4E36B682DCEB6C300B049A3 /* AltoUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AltoUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
-/* Begin PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
-		C4AFFE402E00AAE7001D60F8 /* Exceptions for "Alto" folder in "Embed Frameworks" phase from "Alto" target */ = {
-			isa = PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet;
-			attributesByRelativePath = {
-				"Open-ADK/Core/Models/TabsManager/../../../../../../../../Development/AltoBrowser/Alto/Alto/Open-ADK/Core/Models/TabsManager/OpenADK.framework" = (CodeSignOnCopy, RemoveHeadersOnCopy, );
-			};
-			buildPhase = C4AFFDF42E007520001D60F8 /* Embed Frameworks */;
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		A7AAB88E2E016166000E2ABC /* Exceptions for "Alto" folder in "Alto" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				"Open-ADK/Core/Models/TabsManager/../../../../../../../../Development/AltoBrowser/Alto/Alto/Open-ADK/Core/Models/TabsManager/OpenADK.framework",
+				"Open-ADK/Core/Models/TabsManager/OpenADK.framework",
 			);
+			target = C4E36B4C2DCEB6C200B049A3 /* Alto */;
 		};
-/* End PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		C4DB134C2DEFBA3600B5D483 /* Alto */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				C4AFFE402E00AAE7001D60F8 /* Exceptions for "Alto" folder in "Embed Frameworks" phase from "Alto" target */,
+				A7AAB88E2E016166000E2ABC /* Exceptions for "Alto" folder in "Alto" target */,
 			);
-			explicitFileTypes = {
-				"Open-ADK/Core/Models/TabsManager/../../../../../../../../Development/AltoBrowser/Alto/Alto/Open-ADK/Core/Models/TabsManager/OpenADK.framework" = wrapper.framework;
-			};
 			path = Alto;
 			sourceTree = "<group>";
 		};
@@ -395,6 +389,10 @@
 				DEVELOPMENT_TEAM = 5TQWF3R63P;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/Alto/Open-ADK/Core/Models/TabsManager",
+				);
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = /Users/hensonliga/Development/AltoBrowser/Alto/Alto/Configurations/Info.plist;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
@@ -576,6 +574,10 @@
 				DEVELOPMENT_TEAM = 5TQWF3R63P;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/Alto/Open-ADK/Core/Models/TabsManager",
+				);
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = /Users/hensonliga/Development/AltoBrowser/Alto/Alto/Configurations/Info.plist;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
@@ -605,6 +607,10 @@
 				DEVELOPMENT_TEAM = 5TQWF3R63P;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/Alto/Open-ADK/Core/Models/TabsManager",
+				);
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = /Users/hensonliga/Development/AltoBrowser/Alto/Alto/Configurations/Info.plist;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
