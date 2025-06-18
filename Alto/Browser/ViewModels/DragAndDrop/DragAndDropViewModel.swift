@@ -1,12 +1,13 @@
 
 import Algorithms
 import Observation
+import OpenADK
 import SwiftUI
 import UniformTypeIdentifiers
 
 @Observable
 class DropZoneViewModel {
-    var tabLocation: TabLocation
+    var tabLocation: any TabLocationProtocol
     var state: AltoState
 
     var isTargeted = false
@@ -19,7 +20,7 @@ class DropZoneViewModel {
         tabLocation.tabs.isEmpty
     }
 
-    init(state: AltoState, tabLocation: TabLocation) {
+    init(state: AltoState, tabLocation: any TabLocationProtocol) {
         self.state = state
         self.tabLocation = tabLocation
     }

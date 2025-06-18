@@ -1,4 +1,5 @@
 //
+import OpenADK
 import SwiftUI
 
 struct DropZoneView: View {
@@ -6,19 +7,23 @@ struct DropZoneView: View {
 
     var body: some View {
         HStack {
-            hoverZoneView(model: HoverZoneViewModel(
-                state: model.state,
-                tabLocation: model.tabLocation,
-                placement: .start
-            ))
+            if let tabLocation = model.tabLocation as? TabLocation {
+                hoverZoneView(model: HoverZoneViewModel(
+                    state: model.state,
+                    tabLocation: tabLocation,
+                    placement: .start
+                ))
+            }
 
             ForEach(Array(model.displayedTabs.enumerated()), id: \.element.id) { index, tabItem in
                 AltoTabView(model: TabViewModel(state: model.state, draggingViewModel: model, tab: tabItem))
-                hoverZoneView(model: HoverZoneViewModel(
-                    state: model.state,
-                    tabLocation: model.tabLocation,
-                    index: index + 1
-                ))
+                if let tabLocation = model.tabLocation as? TabLocation {
+                    hoverZoneView(model: HoverZoneViewModel(
+                        state: model.state,
+                        tabLocation: tabLocation,
+                        index: index + 1
+                    ))
+                }
             }
 
             Spacer()

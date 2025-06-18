@@ -1,4 +1,5 @@
-//
+import AppKit
+import OpenADK
 
 /// Handles major portions of tha app lifecycle
 ///
@@ -10,6 +11,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         print("App Launched")
 
-        Alto.shared.windowManager.createWindow()
+        var windowConfig = DefaultWindowConfiguration()
+
+        windowConfig.stateFactory = { AltoState() }
+
+        windowConfig.setView { state in
+            BrowserView(genaricState: state)
+        }
+
+        windowManager.configuration = windowConfig
+
+        windowManager.createWindow(tabs: [])
     }
 }

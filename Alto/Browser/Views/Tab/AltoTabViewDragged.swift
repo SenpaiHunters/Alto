@@ -25,7 +25,7 @@ struct AltoTabViewDragged: View {
             perform: {
                 model.state.draggedTab = model.tab
                 model.isDragged = true
-                model.state.browserTabsManager.currentSpace.currentTab = model.altoTab
+                model.state.currentSpace?.currentTab = model.altoTab
             }
         )
         .onDisappear(

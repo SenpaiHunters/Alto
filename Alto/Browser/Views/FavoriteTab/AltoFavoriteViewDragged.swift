@@ -18,7 +18,7 @@ struct AltoFavoriteViewDragged: View {
         .frame(width: 150)
         .background(
             RoundedRectangle(cornerRadius: 8)
-                .fill((model.state.browserTabsManager.currentSpace.currentTab?.id == model.tab.id || model.isHovered) ?
+                .fill((model.state.currentSpace?.currentTab?.id == model.tab.id || model.isHovered) ?
                     .gray.opacity(0.4) : .gray.opacity(0)
                 )
         )
@@ -26,7 +26,7 @@ struct AltoFavoriteViewDragged: View {
             perform: {
                 model.state.draggedTab = model.tab
                 model.isDragged = true
-                model.state.browserTabsManager.currentSpace.currentTab = model.altoTab
+                model.state.currentSpace?.currentTab = model.altoTab
                 print("drag start")
             }
         )

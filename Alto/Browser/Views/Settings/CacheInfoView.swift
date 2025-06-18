@@ -1,3 +1,4 @@
+import OpenADK
 import SwiftUI
 
 struct CacheInfoView: View {

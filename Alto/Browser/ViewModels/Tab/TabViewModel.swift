@@ -1,3 +1,5 @@
+import Observation
+import OpenADK
 import SwiftUI
 
 @Observable
@@ -7,15 +9,22 @@ class TabViewModel {
     var draggingViewModel: DropZoneViewModel
 
     var altoTab: AltoTab? {
-        Alto.shared.getTab(id: tab.id)
+        if let tab = Alto.shared.getTab(id: tab.id) as? AltoTab {
+            return tab
+        }
+        return nil
     }
 
     var tabTitle: String {
-        Alto.shared.getTab(id: tab.id)?.title ?? "Untitled"
+        altoTab?.content[0].title ?? "Untitled"
     }
 
     var tabIcon: Image {
-        Alto.shared.getTab(id: tab.id)?.favicon ?? Image(systemName: "square.fill")
+        if let favicon = altoTab?.content.first?.favicon {
+            Image(nsImage: favicon)
+        } else {
+            Image(systemName: "square.fill")
+        }
     }
 
     var closeIcon = Image(systemName: "xmark")
@@ -24,7 +33,7 @@ class TabViewModel {
     var isDragged = false
 
     var isCurrentTab: Bool {
-        state.browserTabsManager.currentSpace.currentTab?.id == altoTab?.id
+        state.currentSpace?.currentTab?.id == altoTab?.id
     }
 
     var tabRepresentation: TabRepresentation {
@@ -38,7 +47,7 @@ class TabViewModel {
     }
 
     func handleSingleClick() {
-        state.browserTabsManager.currentSpace.currentTab = Alto.shared.getTab(id: tab.id)
+        state.currentSpace?.currentTab = Alto.shared.getTab(id: tab.id)
     }
 
     func selectTab() {

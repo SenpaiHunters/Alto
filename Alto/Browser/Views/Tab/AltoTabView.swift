@@ -18,7 +18,7 @@ struct AltoTabView: View {
         .frame(width: 150)
         .background(
             RoundedRectangle(cornerRadius: 8)
-                .fill((model.state.browserTabsManager.currentSpace.currentTab?.id == model.tab.id || model.isHovered) ?
+                .fill((model.state.currentSpace?.currentTab?.id == model.tab.id || model.isHovered) ?
                     .gray.opacity(0.4) : .gray.opacity(0)
                 ) // lol i need to fix this
         )

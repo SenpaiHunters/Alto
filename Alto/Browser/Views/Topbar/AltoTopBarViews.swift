@@ -1,3 +1,4 @@
+import OpenADK
 import SwiftUI
 
 struct AltoTopBar: View {
@@ -12,16 +13,16 @@ struct AltoTopBar: View {
 
             // TODO: add spaces dropdown
             AltoButton(action: {
-                model.currentTab?.webView.goBack()
-            }, icon: "arrow.left", active: model.currentTab?.canGoBack ?? false)
+                model.state.currentSpace?.currentTab?.content[0].goBack()
+            }, icon: "arrow.left", active: model.state.currentSpace?.currentTab?.content[0].canGoBack ?? false)
                 .frame(height: 30)
                 .fixedSize()
                 .keyboardShortcut(Shortcuts.goBack)
                 .keyboardShortcut(Shortcuts.goBackAlt)
 
             AltoButton(action: {
-                model.currentTab?.webView.goForward()
-            }, icon: "arrow.right", active: model.currentTab?.canGoForward ?? false)
+                model.state.currentSpace?.currentTab?.content[0].goForward()
+            }, icon: "arrow.right", active: model.state.currentSpace?.currentTab?.content[0].canGoForward ?? false)
                 .frame(height: 30)
                 .fixedSize()
                 .keyboardShortcut(Shortcuts.goForward)
@@ -29,22 +30,24 @@ struct AltoTopBar: View {
 
             FavoriteDropZoneView(model: FavoriteDropZoneViewModel(
                 state: model.state,
-                tabLocation: model.state.browserTabsManager.favorites
+                tabLocation: model.state.tabManager.globalLocations[0]
             ))
             .frame(height: 30)
             .fixedSize()
 
-            if !model.state.browserTabsManager.favorites.tabs.isEmpty {
+            if !model.state.tabManager.globalLocations[0].tabs.isEmpty {
                 Divider().frame(width: 2)
             }
 
-            DropZoneView(model: DropZoneViewModel(
-                state: model.state,
-                tabLocation: model.state.browserTabsManager.currentSpace.normal
-            ))
-            .frame(height: 30)
-            .frame(maxWidth: .infinity)
-            .layoutPriority(1)
+            if let tabLocation = model.state.currentSpace?.localLocations[1] {
+                DropZoneView(model: DropZoneViewModel(
+                    state: model.state,
+                    tabLocation: tabLocation
+                ))
+                .frame(height: 30)
+                .frame(maxWidth: .infinity)
+                .layoutPriority(1)
+            }
 
             TopBarRigtButtonsView()
                 .frame(height: 30)

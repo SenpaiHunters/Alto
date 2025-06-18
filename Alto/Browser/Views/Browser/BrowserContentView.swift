@@ -1,3 +1,4 @@
+import OpenADK
 import SwiftUI
 
 struct BrowserContentView: View {
@@ -25,13 +26,16 @@ struct BrowserContentView: View {
                     }
 
                     ZStack {
-                        let currentTab = altoState.browserTabsManager.currentSpace.currentTab
+                        let currentContent = altoState.currentContent
 
-                        NSWebView(webView: currentTab?.webView)
-                            .id(currentTab?.id)
-                            .cornerRadius(10)
+                        if let currentContent {
+                            ForEach(Array(currentContent.enumerated()), id: \.element.id) { _, content in
+                                AnyView(content.returnView())
+                                    .cornerRadius(10)
+                            }
+                        }
 
-                        if currentTab == nil {
+                        if currentContent == nil {
                             Image("Logo")
                                 .opacity(0.5)
                                 .blendMode(.softLight)
@@ -57,20 +61,20 @@ struct BrowserContentView: View {
 
                 AltoButton(
                     action: {
-                        altoState.browserTabsManager.currentSpace.currentTab?.webView.goBack()
+                        altoState.currentSpace?.currentTab?.content[0].goBack()
                     },
                     icon: "arrow.left",
-                    active: altoState.browserTabsManager.currentSpace.currentTab?.canGoBack ?? false
+                    active: altoState.currentSpace?.currentTab?.content[0].canGoBack ?? false
                 )
                 .frame(height: 30)
                 .fixedSize()
 
                 AltoButton(
                     action: {
-                        altoState.browserTabsManager.currentSpace.currentTab?.webView.goForward()
+                        altoState.currentSpace?.currentTab?.content[0].goForward()
                     },
                     icon: "arrow.right",
-                    active: altoState.browserTabsManager.currentSpace.currentTab?.canGoForward ?? false
+                    active: altoState.currentSpace?.currentTab?.content[0].canGoForward ?? false
                 )
                 .frame(height: 30)
                 .fixedSize()
@@ -81,10 +85,12 @@ struct BrowserContentView: View {
             .padding(.horizontal, 5)
 
             // Sidebar tabs
-            SidebarTabView(model: DropZoneViewModel(
-                state: altoState,
-                tabLocation: altoState.browserTabsManager.currentSpace.normal
-            ))
+            if let location = altoState.currentSpace?.localLocations[1] {
+                SidebarTabView(model: DropZoneViewModel(
+                    state: altoState,
+                    tabLocation: location
+                ))
+            }
         }
         .frame(width: 200)
     }
@@ -105,13 +111,16 @@ struct BrowserContentView: View {
 
             // Web view
             ZStack {
-                let currentTab = altoState.browserTabsManager.currentSpace.currentTab
+                let currentContent = altoState.currentContent
 
-                NSWebView(webView: currentTab?.webView)
-                    .id(currentTab?.id)
-                    .cornerRadius(10)
+                if let currentContent {
+                    ForEach(Array(currentContent.enumerated()), id: \.element.id) { _, content in
+                        AnyView(content.returnView())
+                            .cornerRadius(10)
+                    }
+                }
 
-                if currentTab == nil {
+                if currentContent == nil {
                     Image("Logo")
                         .opacity(0.5)
                         .blendMode(.softLight)

@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		C49770FD2E02F27500CD80AF /* OpenADK.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C49770FC2E02F27500CD80AF /* OpenADK.framework */; };
+		C49770FE2E02F27500CD80AF /* OpenADK.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = C49770FC2E02F27500CD80AF /* OpenADK.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		C4D5A48B2DFFD4E700002E71 /* SwiftSoup in Frameworks */ = {isa = PBXBuildFile; productRef = C4D5A48A2DFFD4E700002E71 /* SwiftSoup */; };
 		C4E36BE02DCEDCB200B049A3 /* Algorithms in Frameworks */ = {isa = PBXBuildFile; productRef = C4E36BDF2DCEDCB200B049A3 /* Algorithms */; };
 /* End PBXBuildFile section */
@@ -35,6 +37,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
+				C49770FE2E02F27500CD80AF /* OpenADK.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -42,6 +45,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		C49770FC2E02F27500CD80AF /* OpenADK.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = OpenADK.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		C4E36B4D2DCEB6C200B049A3 /* Alto.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Alto.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C4E36B5E2DCEB6C300B049A3 /* AltoTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AltoTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		C4E36B682DCEB6C300B049A3 /* AltoUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AltoUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -74,6 +78,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				C4E36BE02DCEDCB200B049A3 /* Algorithms in Frameworks */,
+				C49770FD2E02F27500CD80AF /* OpenADK.framework in Frameworks */,
 				C4D5A48B2DFFD4E700002E71 /* SwiftSoup in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -98,6 +103,7 @@
 		C4D5A4892DFFD4D000002E71 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				C49770FC2E02F27500CD80AF /* OpenADK.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -374,13 +380,9 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;
-				DEVELOPMENT_TEAM = X4TGV86MXQ;
+				DEVELOPMENT_TEAM = 5TQWF3R63P;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
-				FRAMEWORK_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/Alto/Open-ADK/Core/Models/TabsManager",
-				);
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ./Alto/Configurations/Info.plist;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
@@ -393,7 +395,6 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "Alto-Browser.Alto";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_OBJC_BRIDGING_HEADER = "Alto/Open-ADK/ObjCBridge/WKWebsiteDataStore+Private.h";
 				SWIFT_VERSION = 5.0;
 			};
 			name = Development;
@@ -564,13 +565,9 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;
-				DEVELOPMENT_TEAM = X4TGV86MXQ;
+				DEVELOPMENT_TEAM = 5TQWF3R63P;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
-				FRAMEWORK_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/Alto/Open-ADK/Core/Models/TabsManager",
-				);
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ./Alto/Configurations/Info.plist;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
@@ -583,7 +580,6 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "Alto-Browser.Alto";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_OBJC_BRIDGING_HEADER = "Alto/Open-ADK/ObjCBridge/WKWebsiteDataStore+Private.h";
 				SWIFT_VERSION = 5.0;
 			};
 			name = Debug;
@@ -598,13 +594,9 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;
-				DEVELOPMENT_TEAM = X4TGV86MXQ;
+				DEVELOPMENT_TEAM = 5TQWF3R63P;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
-				FRAMEWORK_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/Alto/Open-ADK/Core/Models/TabsManager",
-				);
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ./Alto/Configurations/Info.plist;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
@@ -617,7 +609,6 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "Alto-Browser.Alto";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_OBJC_BRIDGING_HEADER = "Alto/Open-ADK/ObjCBridge/WKWebsiteDataStore+Private.h";
 				SWIFT_VERSION = 5.0;
 			};
 			name = Release;

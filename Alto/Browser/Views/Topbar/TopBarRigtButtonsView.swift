@@ -1,3 +1,4 @@
+import OpenADK
 import SwiftUI
 
 struct TopBarRigtButtonsView: View {
@@ -5,15 +6,11 @@ struct TopBarRigtButtonsView: View {
 
     var body: some View {
         HStack {
-            AltoButton(action: { altoState.browserTabsManager.createNewTab() }, icon: "plus", active: true)
-            AltoButton(
-                action: {
-                    Alto.shared.cookieManager
-                        .setupCookies(for: altoState.browserTabsManager.currentSpace.currentTab!.webView)
-                },
-                icon: "circle",
-                active: true
-            )
+            AltoButton(action: {
+                if let tabManager = altoState.tabManager as? TabsManager {
+                    tabManager.createNewTab(location: "unpinned")
+                }
+            }, icon: "plus", active: true)
 
             // AltoButton(action: {altoState.toggleTopbar()}, icon: "rectangle")
         }

@@ -1,4 +1,7 @@
 //
+import Observation
+import OpenADK
+import SwiftUI
 
 @Observable
 class HoverZoneViewModel {
@@ -8,7 +11,7 @@ class HoverZoneViewModel {
         case end
     }
 
-    var tabLocation: TabLocation
+    var tabLocation: TabLocationProtocol
     var state: AltoState
     var placement: ZonePlacement
     var index: Int
@@ -59,7 +62,7 @@ class HoverZoneViewModel {
         var tabsNew: [TabRepresentation] = []
 
         for (index, tab) in Array(tabLocation.tabs.enumerated()) {
-            tabsNew.append(TabRepresentation(id: tab.id, index: index))
+            tabsNew.append(TabRepresentation(id: tab.id, containerID: tab.containerID, index: index - 1))
         }
 
         tabLocation.tabs = tabsNew
