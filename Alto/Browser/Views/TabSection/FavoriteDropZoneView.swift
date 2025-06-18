@@ -1,41 +1,57 @@
 //
 
-
-
 import SwiftUI
+
+// MARK: - FavoriteDropZoneView
 
 struct FavoriteDropZoneView: View {
     var model: FavoriteDropZoneViewModel
-    
+
     var body: some View {
         HStack {
             ZStack {
                 Rectangle()
                     .fill(.red.opacity(0))
-                    .frame(width: 30) 
+                    .frame(width: 30)
                     .dropDestination(for: TabRepresentation.self) { droppedTabs, location in
-                        model.onDrop(droppedTabs: droppedTabs, location: location) /// this will calculate the closses insertion point
+                        model
+                            .onDrop(
+                                droppedTabs: droppedTabs,
+                                location: location
+                            ) /// this will calculate the closses insertion point
                     } isTargeted: { isTargeted in
                         model.handleTargeted(isTargeted)
                     }
             }
             .frame(width: 0)
             .zIndex(12)
-            
+
             if !model.showEmptyDropIndicator {
                 if !model.isEmpty {
-                        hoverZoneView(model: HoverZoneViewModel(state: model.state, tabLocation: model.tabLocation, placement: .start))
-                    
+                    hoverZoneView(model: HoverZoneViewModel(
+                        state: model.state,
+                        tabLocation: model.tabLocation,
+                        placement: .start
+                    ))
+
                     ForEach(Array(model.displayedTabs.enumerated()), id: \.element.id) { index, tabItem in
                         AltoTabView(model: TabViewModel(state: model.state, draggingViewModel: model, tab: tabItem))
-                        hoverZoneView(model: HoverZoneViewModel(state: model.state, tabLocation: model.tabLocation, index: index))
+                        hoverZoneView(model: HoverZoneViewModel(
+                            state: model.state,
+                            tabLocation: model.tabLocation,
+                            index: index
+                        ))
                     }
                     Spacer()
                 }
             } else {
                 EmptyFavoritesView()
                     .dropDestination(for: TabRepresentation.self) { droppedTabs, location in
-                        model.onDrop(droppedTabs: droppedTabs, location: location) /// this will calculate the closses insertion point
+                        model
+                            .onDrop(
+                                droppedTabs: droppedTabs,
+                                location: location
+                            ) /// this will calculate the closses insertion point
                     } isTargeted: { isTargeted in
                         model.handleTargeted(isTargeted)
                     }
@@ -44,6 +60,7 @@ struct FavoriteDropZoneView: View {
     }
 }
 
+// MARK: - EmptyFavoritesView
 
 struct EmptyFavoritesView: View {
     var body: some View {
@@ -52,7 +69,7 @@ struct EmptyFavoritesView: View {
                 .resizable()
                 .scaledToFit()
                 .cornerRadius(5)
-            
+
             Text("Add to Favorites")
         }
         .padding(4)
@@ -63,4 +80,3 @@ struct EmptyFavoritesView: View {
         .zIndex(12)
     }
 }
-

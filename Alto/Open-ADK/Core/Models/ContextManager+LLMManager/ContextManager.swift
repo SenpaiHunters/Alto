@@ -1,13 +1,10 @@
 import SwiftSoup
 
 class NewContextManager {
-    
-    init() {
-        
-    }
-    
+    init() {}
+
     func pullContextFromPage(for webView: WKWebView) {
-        webView.evaluateJavaScript("document.documentElement.outerHTML.toString()") { result, error in
+        webView.evaluateJavaScript("document.documentElement.outerHTML.toString()") { result, _ in
             if let html = result as? String {
                 let dom = NewDOMTree(for: html)
                 print(try? dom.rootElement?.element?.text())
@@ -17,4 +14,3 @@ class NewContextManager {
         }
     }
 }
-

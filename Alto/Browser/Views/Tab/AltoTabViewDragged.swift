@@ -1,18 +1,17 @@
 //
 import SwiftUI
 
-
 struct AltoTabViewDragged: View {
     var model: TabViewModel
-    
+
     var body: some View {
         HStack {
             faviconImage(model: model)
-            
+
             Text(model.tabTitle)
-            
+
             Spacer()
-            
+
             closeButton(model: model)
         }
         .padding(4)

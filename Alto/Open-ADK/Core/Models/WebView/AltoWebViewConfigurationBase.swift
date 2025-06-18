@@ -16,4 +16,3 @@ class AltoWebViewConfigurationBase: WKWebViewConfiguration {
         defaultWebpagePreferences.allowsContentJavaScript = true
     }
 }
-

@@ -1,33 +1,31 @@
 
 import Algorithms
+import Observation
 import SwiftUI
 import UniformTypeIdentifiers
-import Observation
-
 
 @Observable
 class DropZoneViewModel {
     var tabLocation: TabLocation
     var state: AltoState
-    
-    var isTargeted: Bool = false
-    
+
+    var isTargeted = false
+
     var displayedTabs: [TabRepresentation] {
-        self.tabLocation.tabs
+        tabLocation.tabs
     }
-    
+
     var isEmpty: Bool {
-        return self.tabLocation.tabs.count == 0
+        tabLocation.tabs.isEmpty
     }
-    
+
     init(state: AltoState, tabLocation: TabLocation) {
         self.state = state
         self.tabLocation = tabLocation
     }
-    
+
     func onDrop(droppedTabs: [TabRepresentation], location: CGPoint) -> Bool {
-        if self.isEmpty {
-            
+        if isEmpty {
             /// this goes through each item from the dropped payload
             for tab in droppedTabs {
                 if let location = Alto.shared.getTab(id: tab.id)?.location {
@@ -35,18 +33,16 @@ class DropZoneViewModel {
                     Alto.shared.getTab(id: tab.id)?.location = tabLocation
                 }
             }
-            
+
             /// ensures there are no duplicates of the dropped tabs
             let allTabs = tabLocation.tabs + droppedTabs
             tabLocation.tabs = Array(allTabs.uniqued())
         }
         return true
     }
-    
+
     func handleTargeted(_ targeted: Bool) {
         NSHapticFeedbackManager.defaultPerformer.perform(.levelChange, performanceTime: .now)
-        self.isTargeted = targeted
+        isTargeted = targeted
     }
 }
-
-
