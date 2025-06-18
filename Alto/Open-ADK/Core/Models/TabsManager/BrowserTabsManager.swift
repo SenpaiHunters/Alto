@@ -1,6 +1,7 @@
-import SwiftUI
 import Observation
+import SwiftUI
 
+// MARK: - BrowserTabsManager
 
 /// Manges Tabs for each Window
 ///
@@ -11,67 +12,64 @@ class BrowserTabsManager {
     var favorites = TabLocation()
     var spaceIndex = 0
     var currentSpace: Space {
-        return Alto.shared.spaces[spaceIndex]
+        Alto.shared.spaces[spaceIndex]
     }
-    // ToDo: make a dedicated search manager
-    var searchEngineURL: String {
-        switch PreferencesManager.shared.searchEngine {
-        case .brave:
-            return "https://search.brave.com/"
-        case .duckduckgo:
-            return "https://duckduckgo.com/?q="
-        case .google:
-            return "https://www.google.com"
-        default:
-            return "https://www.google.com"
-        }
-    }
-    
+
+    // Using dedicated SearchManager for search functionality
+    private let searchManager = SearchManager.shared
+
     init(state: AltoState? = nil) {
         self.state = state
         // self.createNewTab()
     }
-    
-    func createNewTab(url: String? = nil, frame: CGRect = .zero, configuration: WKWebViewConfiguration = AltoWebViewConfigurationBase(), location: Location = .normal) {
-        guard let state = self.state else {
+
+    func createNewTab(
+        url: String? = nil,
+        frame: CGRect = .zero,
+        configuration: WKWebViewConfiguration = AltoWebViewConfigurationBase(),
+        location: Location = .normal
+    ) {
+        guard let state else {
             return
         }
-        
+
         let newWebView = AltoWebView(frame: frame, configuration: configuration)
         Alto.shared.cookieManager.setupCookies(for: newWebView)
-        
+
         var tabLocation: TabLocation {
             switch location {
-            case .favorite: self.favorites
-            case .pinned: self.currentSpace.pinned
-            case .normal: self.currentSpace.normal
+            case .favorite: favorites
+            case .pinned: currentSpace.pinned
+            case .normal: currentSpace.normal
             }
         }
-        let urlString = url ?? searchEngineURL
-        
+        let urlString = url ?? searchManager.homePageURL
+
         if let url = URL(string: urlString) {
             let request = URLRequest(url: url)
             newWebView.load(request)
         }
-         
+
         let newTab = AltoTab(webView: newWebView, state: state)
         let tabRep = TabRepresentation(id: newTab.id, index: tabLocation.tabs.count)
         Alto.shared.tabs[newTab.id] = newTab
         tabLocation.appendTabRep(tabRep)
-        self.currentSpace.currentTab = newTab
+        currentSpace.currentTab = newTab
     }
-}
+
     func closeCurrentTab() {
-        if let currentTab = self.currentSpace.currentTab {
+        if let currentTab = currentSpace.currentTab {
             currentTab.closeTab()
         }
     }
 }
 
+// MARK: BrowserTabsManager.Location
+
 extension BrowserTabsManager {
     enum Location {
-        case favorite, pinned, normal
+        case favorite
+        case pinned
+        case normal
     }
 }
-
-

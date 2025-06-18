@@ -1,7 +1,5 @@
 //
 
-
-
 import Observation
 
 @Observable

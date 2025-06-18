@@ -20,7 +20,7 @@ struct AppCommands: Commands {
             Button("Close Tab") {
                 Alto.shared.windowManager.window?.state.browserTabsManager.closeCurrentTab()
             }
-            .keyboardShortcut(Shortcuts.closeTab)
+//            .keyboardShortcut(Shortcuts.closeTab)
         }
 
         CommandMenu("Tabs") {
@@ -31,7 +31,11 @@ struct AppCommands: Commands {
         }
     }
 
-    private func archiveButton(_ title: String, shortcut: KeyboardShortcut, action: @escaping (AltoTab) -> Void) -> some View {
+    private func archiveButton(
+        _ title: String,
+        shortcut: KeyboardShortcut,
+        action: @escaping (AltoTab) -> ()
+    ) -> some View {
         Button(title) {
             if let tab = Alto.shared.windowManager.window?.state.browserTabsManager.currentSpace.currentTab {
                 action(tab)
@@ -40,4 +44,3 @@ struct AppCommands: Commands {
         .keyboardShortcut(shortcut)
     }
 }
-

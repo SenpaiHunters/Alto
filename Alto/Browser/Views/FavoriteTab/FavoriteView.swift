@@ -1,10 +1,10 @@
 import SwiftUI
 
-
+// MARK: - FavoriteView
 
 struct FavoriteView: View {
     var model: TabViewModel
-    @State var isHovered: Bool = false
+    @State var isHovered = false
     var body: some View {
         HStack {
             model.tabIcon
@@ -20,9 +20,7 @@ struct FavoriteView: View {
                 .opacity(1)
         }
         .gesture(
-            TapGesture(count: 2).onEnded {
-                
-            }
+            TapGesture(count: 2).onEnded {}
         )
         .simultaneousGesture(
             TapGesture().onEnded {
@@ -34,18 +32,16 @@ struct FavoriteView: View {
                 .fill(.white.opacity(0.2))
                 .cornerRadius(5)
         )
-        .onHover { hovered in
-            
+        .onHover { _ in
         }
     }
 }
 
-
-
+// MARK: - AltoFavoriteView
 
 struct AltoFavoriteView: View {
     var model: TabViewModel
-    
+
     var body: some View {
         HStack {
             faviconImage(model: model)
@@ -54,7 +50,9 @@ struct AltoFavoriteView: View {
         .frame(width: 150)
         .background(
             RoundedRectangle(cornerRadius: 8)
-                .fill((model.state.browserTabsManager.currentSpace.currentTab?.id == model.tab.id || model.isHovered ) ? .gray.opacity(0.4) : .gray.opacity(0))
+                .fill((model.state.browserTabsManager.currentSpace.currentTab?.id == model.tab.id || model.isHovered) ?
+                    .gray.opacity(0.4) : .gray.opacity(0)
+                )
         )
         .contentShape(Rectangle()) // Makes the background clickable
         .gesture(

@@ -3,7 +3,6 @@
 import SwiftUI
 
 struct BrowserView: View {
-    
     var body: some View {
         ZStack {
             WindowBackgroundView()
@@ -12,4 +11,3 @@ struct BrowserView: View {
         .preferredColorScheme(PreferencesManager.shared.colorScheme)
     }
 }
-

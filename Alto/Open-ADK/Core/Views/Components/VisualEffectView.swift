@@ -1,7 +1,7 @@
 //
 
-import SwiftUI
 import AppKit
+import SwiftUI
 
 // Creates a representable so window can use appkit exclusive Materials
 struct VisualEffectView: NSViewRepresentable {
@@ -14,7 +14,7 @@ struct VisualEffectView: NSViewRepresentable {
         view.blendingMode = .behindWindow
         return view
     }
-    
+
     func updateNSView(_ nsView: NSVisualEffectView, context: Context) {
         nsView.material = material
         nsView.state = state
