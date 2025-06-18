@@ -8,11 +8,8 @@ class TabViewModel {
     var tab: TabRepresentation
     var draggingViewModel: DropZoneViewModel
 
-    var altoTab: AltoTab? {
-        if let tab = Alto.shared.getTab(id: tab.id) as? AltoTab {
-            return tab
-        }
-        return nil
+    var altoTab: (any TabProtocol)? {
+        return Alto.shared.getTab(id: tab.id)
     }
 
     var tabTitle: String {
