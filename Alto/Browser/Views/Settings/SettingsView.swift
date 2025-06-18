@@ -69,7 +69,7 @@ struct SettingsView: View {
                 CacheInfoView()
 
                 Button("Clear Favicon Cache") {
-                    FaviconManager.shared.clearCache()
+                    Alto.shared.faviconManager.clearCache()
                 }
                 .foregroundColor(.red)
 

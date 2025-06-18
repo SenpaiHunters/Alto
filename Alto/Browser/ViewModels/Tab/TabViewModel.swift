@@ -17,7 +17,7 @@ class TabViewModel {
     }
 
     var tabIcon: Image {
-        if let favicon = altoTab?.content.first?.favicon {
+        if let favicon = altoTab?.content[0].favicon {
             Image(nsImage: favicon)
         } else {
             Image(systemName: "square.fill")
