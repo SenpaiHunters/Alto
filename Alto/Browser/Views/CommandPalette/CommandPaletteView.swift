@@ -41,6 +41,9 @@ struct CommandPaletteView: View {
                                 viewModel.handleDismiss(altoState: altoState)
                                 return .handled
                             }
+                            .onKeyPress(.tab) {
+                                return .handled
+                            }
                             .onChange(of: altoState.isShowingCommandPalette) { oldValue, newValue in
                                 viewModel.handlePaletteVisibilityChange(newValue: newValue)
                                 
