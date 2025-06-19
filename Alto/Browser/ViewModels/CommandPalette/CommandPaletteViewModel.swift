@@ -34,6 +34,7 @@ extension CommandPaletteView {
         /// Handles the submission of search text or URL.
         ///
         /// Creates a new tab with the entered URL or performs a search using the default search engine.
+        /// For valid URLs, the search text is normalized before creating the tab.
         /// Automatically closes the command palette after submission.
         ///
         /// - Parameters:
@@ -43,7 +44,8 @@ extension CommandPaletteView {
             guard let tabManager = tabManager else { return }
             
             if searchManager.isValidURL(searchText) {
-                tabManager.createNewTab(url: searchText, location: "unpinned")
+                let normalizedSearchText = searchManager.normalizeURL(searchText)
+                tabManager.createNewTab(url: normalizedSearchText, location: "unpinned")
             } else {
                 if let safeSearchText = searchText.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) {
                     tabManager.createNewTab(url: searchManager.searchEngineURL + safeSearchText, location: "unpinned")
