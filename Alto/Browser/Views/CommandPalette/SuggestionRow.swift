@@ -39,7 +39,7 @@ struct SuggestionRow: View {
             Group {
                 if isHovered  || isSelected {
                     RoundedRectangle(cornerRadius: 8)
-                        .fill(Color.secondary.opacity(0.05))
+                        .fill(Color.secondary.opacity(0.1))
                         .padding(.horizontal, 4)
                 } else {
                     Color.clear

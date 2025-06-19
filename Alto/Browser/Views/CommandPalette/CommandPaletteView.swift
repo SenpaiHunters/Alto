@@ -11,7 +11,6 @@ import OpenADK
 struct CommandPaletteView: View {
     @Environment(AltoState.self) private var altoState
     @State private var searchManager: SearchManager = .shared
-    @State private var isShowingCommandPalette: Bool = true
     @State private var searchText: String = ""
     @FocusState private var isSearchFocused: Bool
     
@@ -21,7 +20,9 @@ struct CommandPaletteView: View {
             Color.black.opacity(0.25)
                 .ignoresSafeArea()
                 .onTapGesture {
-                    isShowingCommandPalette = false
+                    withAnimation(.spring(duration: 0.2)) {
+                        altoState.isShowingCommandPalette = false
+                    }
                 }
             
             VStack {
@@ -46,7 +47,21 @@ struct CommandPaletteView: View {
                                         }
                                     }
                                     
-                                    isShowingCommandPalette = false
+                                    altoState.isShowingCommandPalette = false
+                                }
+                            }
+                            .onKeyPress(.escape) {
+                                withAnimation(.spring(duration: 0.2)) {
+                                    altoState.isShowingCommandPalette = false
+                                }
+                                return .handled
+                            }
+                            .onChange(of: altoState.isShowingCommandPalette) { oldValue, newValue in
+                                searchText = ""
+                                
+//                                Fixes: Sometimes the Search Bar can become unfocused.
+                                if newValue {
+                                    isSearchFocused = true
                                 }
                             }
                     }
@@ -67,18 +82,19 @@ struct CommandPaletteView: View {
                                         if let tabManager = altoState.tabManager as? TabsManager,
                                            let safeSearchText = suggestion.text.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) {
                                             tabManager.createNewTab(url: searchManager.searchEngineURL+safeSearchText,location: "unpinned")
-                                            isShowingCommandPalette = false
+                                            altoState.isShowingCommandPalette = false
                                         }
                                     }
                             }
                         }
+                        .padding(.vertical, 4)
                     }
                 }
                 .frame(maxWidth: 580)
                 .background(Color(NSColor.controlBackgroundColor))
                 .clipShape(RoundedRectangle(cornerRadius: 12))
                 .shadow(color: .black.opacity(0.15), radius: 24, x: 0, y: 12)
-                .animation(.bouncy.speed(1.5), value: searchManager.suggestions)
+                .animation(.bouncy.delay(0.1).speed(1.5), value: searchManager.suggestions)
                 .task(id: searchText) {
                     searchManager.fetchSuggestions(for: searchText)
                 }
@@ -87,7 +103,7 @@ struct CommandPaletteView: View {
             }
             .padding(.top, 250)
         }
-        .allowsHitTesting(isShowingCommandPalette)
-        .opacity(isShowingCommandPalette ? 1.0 : 0.0)
+        .allowsHitTesting(altoState.isShowingCommandPalette)
+        .opacity(altoState.isShowingCommandPalette ? 1.0 : 0.0)
     }
 }

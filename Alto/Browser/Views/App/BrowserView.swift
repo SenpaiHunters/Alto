@@ -18,6 +18,7 @@ struct BrowserView: View {
         ZStack {
             WindowBackgroundView()
             BrowserContentView()
+            CommandPaletteView()
         }
         .environment(state)
         .preferredColorScheme(PreferencesManager.shared.colorScheme)

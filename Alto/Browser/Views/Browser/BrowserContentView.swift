@@ -44,9 +44,7 @@ struct BrowserContentView: View {
                     }
                 }
                 .padding(5)
-            }
-            
-            CommandPaletteView()
+            }            
         }
         .ignoresSafeArea()
     }
