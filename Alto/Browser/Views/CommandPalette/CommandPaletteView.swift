@@ -10,54 +10,39 @@ import OpenADK
 
 struct CommandPaletteView: View {
     @Environment(AltoState.self) private var altoState
-    @State private var searchManager: SearchManager = .shared
-    @State private var searchText: String = ""
     @FocusState private var isSearchFocused: Bool
+    @State private var viewModel: ViewModel = .init()
     
-    var body: some View {
+    var body: some View {        
         ZStack {
 //            Dimming Layer
             Color.black.opacity(0.25)
                 .ignoresSafeArea()
                 .onTapGesture {
-                    withAnimation(.spring(duration: 0.2)) {
-                        altoState.isShowingCommandPalette = false
-                    }
+                    viewModel.handleDismiss(altoState: altoState)
                 }
             
             VStack {
                 VStack(spacing: 0) {
 //                    MARK: - Search Bar
                     HStack(spacing: 12) {
-                        Image(systemName: searchManager.isValidURL(searchText) ? "globe" : "magnifyingglass")
+                        Image(systemName: viewModel.searchIcon)
                             .foregroundStyle(.secondary)
                             .font(.system(size: 16, weight: .medium))
                         
-                        TextField("Search or enter address", text: $searchText)
+                        TextField("Search or enter address", text: $viewModel.searchText)
                             .textFieldStyle(.plain)
                             .font(.system(size: 16, weight: .regular))
                             .focused($isSearchFocused)
                             .onSubmit {
-                                if let tabManager = altoState.tabManager as? TabsManager {
-                                    if searchManager.isValidURL(searchText) {
-                                        tabManager.createNewTab(url: searchText, location: "unpinned")
-                                    } else {
-                                        if let safeSearchText = searchText.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) {
-                                            tabManager.createNewTab(url: searchManager.searchEngineURL+safeSearchText,location: "unpinned")
-                                        }
-                                    }
-                                    
-                                    altoState.isShowingCommandPalette = false
-                                }
+                                viewModel.handleSubmit(tabManager: altoState.tabManager as? TabsManager, altoState: altoState)
                             }
                             .onKeyPress(.escape) {
-                                withAnimation(.spring(duration: 0.2)) {
-                                    altoState.isShowingCommandPalette = false
-                                }
+                                viewModel.handleDismiss(altoState: altoState)
                                 return .handled
                             }
                             .onChange(of: altoState.isShowingCommandPalette) { oldValue, newValue in
-                                searchText = ""
+                                viewModel.handlePaletteVisibilityChange(newValue: newValue)
                                 
 //                                Fixes: Sometimes the Search Bar can become unfocused.
                                 if newValue {
@@ -69,21 +54,17 @@ struct CommandPaletteView: View {
                     .padding(.vertical, 16)
                     
 //                    MARK: - Suggestions List
-                    if !searchManager.suggestions.isEmpty {
+                    if !viewModel.searchManager.suggestions.isEmpty {
                         Divider()
                             .frame(height: 0.5)
                             .background(Color.secondary.opacity(0.1))
                             .padding(.horizontal, 20)
                         
                         VStack(spacing: 0) {
-                            ForEach(searchManager.suggestions) { suggestion in
+                            ForEach(viewModel.searchManager.suggestions) { suggestion in
                                 SuggestionRow(suggestion: suggestion, isSelected: false)
                                     .onTapGesture {
-                                        if let tabManager = altoState.tabManager as? TabsManager,
-                                           let safeSearchText = suggestion.text.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) {
-                                            tabManager.createNewTab(url: searchManager.searchEngineURL+safeSearchText,location: "unpinned")
-                                            altoState.isShowingCommandPalette = false
-                                        }
+                                        viewModel.handleSuggestionTap(suggestion: suggestion, tabManager: altoState.tabManager as? TabsManager, altoState: altoState)
                                     }
                             }
                         }
@@ -94,9 +75,9 @@ struct CommandPaletteView: View {
                 .background(Color(NSColor.controlBackgroundColor))
                 .clipShape(RoundedRectangle(cornerRadius: 12))
                 .shadow(color: .black.opacity(0.15), radius: 24, x: 0, y: 12)
-                .animation(.bouncy.delay(0.1).speed(1.5), value: searchManager.suggestions)
-                .task(id: searchText) {
-                    searchManager.fetchSuggestions(for: searchText)
+                .animation(.bouncy.delay(0.1).speed(1.5), value: viewModel.searchManager.suggestions)
+                .task(id: viewModel.searchText) {
+                    viewModel.fetchSuggestions()
                 }
                 
                 Spacer()
