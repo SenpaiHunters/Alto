@@ -41,6 +41,9 @@ struct CommandPaletteView: View {
                                 
                                 viewModel.handlePerformSearch(text: textToSubmit, tabManager: altoState.tabManager as? TabsManager, altoState: altoState)
                             }
+                            .onChange(of: viewModel.searchText) { oldValue, newValue in
+                                viewModel.resetSelection()
+                            }
                             .onKeyPress(.escape) {
                                 viewModel.handleDismiss(altoState: altoState)
                                 return .handled
@@ -67,6 +70,9 @@ struct CommandPaletteView: View {
                     }
                     .padding(.horizontal, 20)
                     .padding(.vertical, 16)
+                    .onHover { _ in
+                        viewModel.resetSelection()
+                    }
                     
 //                    MARK: - Suggestions List
                     if !viewModel.searchManager.suggestions.isEmpty {
