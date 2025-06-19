@@ -64,7 +64,7 @@ class MacButtonsViewModel {
         if buttonState != .idle {
             return (macFillColor(buttonType: buttonType), macStrokeColor(buttonType: buttonType))
         }
-        return (Color.white.opacity(0.15), Color.clear)
+        return (Color.primary.opacity(0.2), Color.clear)
     }
 
     func macFillColor(buttonType: ButtonType) -> Color {
