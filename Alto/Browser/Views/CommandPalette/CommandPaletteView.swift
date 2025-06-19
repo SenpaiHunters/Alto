@@ -13,7 +13,8 @@ struct CommandPaletteView: View {
     @FocusState private var isSearchFocused: Bool
     @State private var viewModel: ViewModel = .init()
     
-    var body: some View {        
+    
+    var body: some View {
         ZStack {
 //            Dimming Layer
             Color.black.opacity(0.25)
@@ -35,13 +36,24 @@ struct CommandPaletteView: View {
                             .font(.system(size: 16, weight: .regular))
                             .focused($isSearchFocused)
                             .onSubmit {
-                                viewModel.handleSubmit(tabManager: altoState.tabManager as? TabsManager, altoState: altoState)
+                                let textToSubmit = viewModel.selectedIndex == -1 ? viewModel.searchText :
+                                    viewModel.searchManager.suggestions[viewModel.selectedIndex].text
+                                
+                                viewModel.handlePerformSearch(text: textToSubmit, tabManager: altoState.tabManager as? TabsManager, altoState: altoState)
                             }
                             .onKeyPress(.escape) {
                                 viewModel.handleDismiss(altoState: altoState)
                                 return .handled
                             }
                             .onKeyPress(.tab) {
+                                return .handled
+                            }
+                            .onKeyPress(.upArrow) {
+                                viewModel.handleUpArrow()
+                                return .handled
+                            }
+                            .onKeyPress(.downArrow) {
+                                viewModel.handleDownArrow()
                                 return .handled
                             }
                             .onChange(of: altoState.isShowingCommandPalette) { oldValue, newValue in
@@ -64,10 +76,13 @@ struct CommandPaletteView: View {
                             .padding(.horizontal, 20)
                         
                         VStack(spacing: 0) {
-                            ForEach(viewModel.searchManager.suggestions) { suggestion in
-                                SuggestionRow(suggestion: suggestion, isSelected: false)
+                            ForEach(Array(viewModel.searchManager.suggestions.enumerated()), id: \.element.id) { index, suggestion in
+                                SuggestionRow(suggestion: suggestion, isSelected: viewModel.selectedIndex == index)
                                     .onTapGesture {
-                                        viewModel.handleSuggestionTap(suggestion: suggestion, tabManager: altoState.tabManager as? TabsManager, altoState: altoState)
+                                        viewModel.handlePerformSearch(text: suggestion.text, tabManager: altoState.tabManager as? TabsManager, altoState: altoState)
+                                    }
+                                    .onHover { _ in
+                                        viewModel.setSelectedIndex(index)
                                     }
                             }
                         }

@@ -11,7 +11,6 @@ import OpenADK
 struct SuggestionRow: View {
     let suggestion: SearchSuggestion
     let isSelected: Bool
-    @State private var isHovered = false
     
     var body: some View {
         HStack(spacing: 14) {
@@ -37,7 +36,7 @@ struct SuggestionRow: View {
         .padding(.vertical, 12)
         .background(
             Group {
-                if isHovered  || isSelected {
+                if isSelected {
                     RoundedRectangle(cornerRadius: 8)
                         .fill(Color.secondary.opacity(0.1))
                         .padding(.horizontal, 4)
@@ -47,9 +46,6 @@ struct SuggestionRow: View {
             }
         )
         .contentShape(Rectangle())
-        .onHover { hovering in
-            isHovered = hovering
-        }
     }
 }
 

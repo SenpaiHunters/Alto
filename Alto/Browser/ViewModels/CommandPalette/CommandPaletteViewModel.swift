@@ -24,6 +24,9 @@ extension CommandPaletteView {
         /// The current search text entered by the user.
         var searchText: String = ""
         
+        /// The currently selected suggestion index for keyboard navigation.
+        var selectedIndex: Int = -1
+        
         /// The icon to display in the search bar based on whether the input is a valid URL.
         ///
         /// Returns "globe" for valid URLs and "magnifyingglass" for search queries.
@@ -31,44 +34,28 @@ extension CommandPaletteView {
             searchManager.isValidURL(searchText) ? "globe" : "magnifyingglass"
         }
         
-        /// Handles the submission of search text or URL.
+        /// Performs a search or navigation with the given text.
         ///
         /// Creates a new tab with the entered URL or performs a search using the default search engine.
-        /// For valid URLs, the search text is normalized before creating the tab.
+        /// For valid URLs, the text is normalized before creating the tab.
         /// Automatically closes the command palette after submission.
         ///
         /// - Parameters:
+        ///   - text: The text to search with or navigate to.
         ///   - tabManager: The tab manager to create new tabs with.
         ///   - altoState: The app state to update the command palette visibility.
-        func handleSubmit(tabManager: TabsManager?, altoState: AltoState) {
+        func handlePerformSearch(text: String, tabManager: TabsManager?, altoState: AltoState) {
             guard let tabManager = tabManager else { return }
             
-            if searchManager.isValidURL(searchText) {
-                let normalizedSearchText = searchManager.normalizeURL(searchText)
-                tabManager.createNewTab(url: normalizedSearchText, location: "unpinned")
+            if searchManager.isValidURL(text) {
+                let normalizedText = searchManager.normalizeURL(text)
+                tabManager.createNewTab(url: normalizedText, location: "unpinned")
             } else {
-                if let safeSearchText = searchText.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) {
+                if let safeSearchText = text.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) {
                     tabManager.createNewTab(url: searchManager.searchEngineURL + safeSearchText, location: "unpinned")
                 }
             }
             
-            altoState.isShowingCommandPalette = false
-        }
-        
-        /// Handles tapping on a search suggestion.
-        ///
-        /// Creates a new tab with a search query for the selected suggestion.
-        /// Automatically closes the command palette after selection.
-        ///
-        /// - Parameters:
-        ///   - suggestion: The search suggestion that was tapped.
-        ///   - tabManager: The tab manager to create new tabs with.
-        ///   - altoState: The app state to update the command palette visibility.
-        func handleSuggestionTap(suggestion: SearchSuggestion, tabManager: TabsManager?, altoState: AltoState) {
-            guard let tabManager = tabManager,
-                  let safeSearchText = suggestion.text.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else { return }
-            
-            tabManager.createNewTab(url: searchManager.searchEngineURL + safeSearchText, location: "unpinned")
             altoState.isShowingCommandPalette = false
         }
         
@@ -89,6 +76,8 @@ extension CommandPaletteView {
         func handlePaletteVisibilityChange(newValue: Bool) {
             if !newValue {
                 searchText = ""
+            } else {
+                resetSelection()
             }
         }
         
@@ -98,6 +87,37 @@ extension CommandPaletteView {
         /// based on the current search text input.
         func fetchSuggestions() {
             searchManager.fetchSuggestions(for: searchText)
+            resetSelection()
+        }
+        
+        /// Handles up arrow key navigation.
+        ///
+        /// Moves selection up in the suggestions list with wrap-around behavior.
+        func handleUpArrow() {
+            if !searchManager.suggestions.isEmpty {
+                selectedIndex = selectedIndex <= 0 ? searchManager.suggestions.count - 1 : selectedIndex - 1
+            }
+        }
+        
+        /// Handles down arrow key navigation.
+        ///
+        /// Moves selection down in the suggestions list with wrap-around behavior.
+        func handleDownArrow() {
+            if !searchManager.suggestions.isEmpty {
+                selectedIndex = selectedIndex >= searchManager.suggestions.count - 1 ? 0 : selectedIndex + 1
+            }
+        }
+        
+        /// Resets the selected index to indicate no selection.
+        func resetSelection() {
+            selectedIndex = -1
+        }
+        
+        /// Sets the selected index to a specific value.
+        ///
+        /// - Parameter index: The index to select.
+        func setSelectedIndex(_ index: Int) {
+            selectedIndex = index
         }
     }
 }
