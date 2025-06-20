@@ -64,19 +64,6 @@ struct SettingsView: View {
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
-
-            Section("Cache Management") {
-                CacheInfoView()
-
-                Button("Clear Favicon Cache") {
-                    Alto.shared.faviconManager.clearCache()
-                }
-                .foregroundColor(.red)
-
-                Text("Favicons are cached for 10 days to improve performance")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
         }
         .padding(10)
         .frame(maxWidth: 400, maxHeight: 500)
@@ -84,6 +71,6 @@ struct SettingsView: View {
     }
 }
 
-#Preview {
-    SettingsView()
-}
+//#Preview {
+//    SettingsView()
+//}

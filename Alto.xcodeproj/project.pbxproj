@@ -230,6 +230,7 @@
 			packageReferences = (
 				C4E36BDE2DCEDCB200B049A3 /* XCRemoteSwiftPackageReference "swift-algorithms" */,
 				C4D5A3642DFFD37C00002E71 /* XCRemoteSwiftPackageReference "SwiftSoup" */,
+				3E5E9D832E05A3E30072BA7C /* XCLocalSwiftPackageReference "../OpenADK" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = C4E36B4E2DCEB6C200B049A3 /* Products */;
@@ -380,7 +381,7 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;
-				DEVELOPMENT_TEAM = X4TGV86MXQ;
+				DEVELOPMENT_TEAM = 5TQWF3R63P;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -565,7 +566,7 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;
-				DEVELOPMENT_TEAM = X4TGV86MXQ;
+				DEVELOPMENT_TEAM = 5TQWF3R63P;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -594,7 +595,7 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;
-				DEVELOPMENT_TEAM = X4TGV86MXQ;
+				DEVELOPMENT_TEAM = 5TQWF3R63P;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -729,6 +730,13 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		3E5E9D832E05A3E30072BA7C /* XCLocalSwiftPackageReference "../OpenADK" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../OpenADK;
+		};
+/* End XCLocalSwiftPackageReference section */
 
 /* Begin XCRemoteSwiftPackageReference section */
 		C4D5A3642DFFD37C00002E71 /* XCRemoteSwiftPackageReference "SwiftSoup" */ = {
