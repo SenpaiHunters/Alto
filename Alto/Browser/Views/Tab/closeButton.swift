@@ -6,7 +6,7 @@ struct closeButton: View {
 
     var body: some View {
         if model.isHovered {
-            Button(action: { model.handleClose() }) {
+            Button(action: { model.handleClose(); print("hit")}) {
                 model.closeIcon
             }
             .containerShape(Rectangle())

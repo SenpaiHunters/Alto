@@ -39,7 +39,7 @@ struct CacheInfoView: View {
     }
 
     private func updateCacheStats() {
-        cacheStats = Alto.shared.faviconManager.getCacheStats()
+        
     }
 
     private func startRefreshTimer() {

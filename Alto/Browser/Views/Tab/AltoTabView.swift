@@ -11,7 +11,7 @@ struct AltoTabView: View {
             Text(model.tabTitle)
 
             Spacer()
-
+            
             closeButton(model: model)
         }
         .padding(4)
@@ -29,7 +29,7 @@ struct AltoTabView: View {
             }
         )
         .simultaneousGesture(
-            TapGesture().onEnded {
+            TapGesture(count: 2).onEnded {
                 model.handleSingleClick()
             }
         )
