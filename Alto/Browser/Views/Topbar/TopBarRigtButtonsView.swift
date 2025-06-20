@@ -7,8 +7,8 @@ struct TopBarRigtButtonsView: View {
     var body: some View {
         HStack {
             AltoButton(action: {
-                if let tabManager = altoState.tabManager as? TabsManager {
-                    tabManager.createNewTab(location: "unpinned")
+                withAnimation(.spring(duration: 0.2)) {
+                    altoState.isShowingCommandPalette = true
                 }
             }, icon: "plus", active: true)
 
