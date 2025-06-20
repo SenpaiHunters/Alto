@@ -5,8 +5,11 @@ import OpenADK
 // MARK: - AltoState
 
 @Observable
+@MainActor
 class AltoState: GenaricState {
-    var sidebar = false
+    var sidebar: Bool = false
+//    The Command Palette needs to be visible on startup due to the Browser Spec
+    var isShowingCommandPalette: Bool = true
     var Topbar: AltoTopBarViewModel.TopbarState = .active
     var draggedTab: TabRepresentation?
 
