@@ -21,6 +21,7 @@ struct CommandPaletteView: View {
                 .onTapGesture {
                     viewModel.handleDismiss(altoState: altoState)
                 }
+                .gesture(WindowDragGesture())
 
             VStack {
                 VStack(spacing: 0) {
