@@ -1,4 +1,5 @@
 //
+import Foundation
 import Observation
 import OpenADK
 
@@ -13,6 +14,11 @@ class AltoState: GenaricState {
     var Topbar: AltoTopBarViewModel.TopbarState = .active
     var draggedTab: TabRepresentation?
 
+    // Extensions
+    var isExtensionsEnabled = true
+    var extensionManager = ExtensionManager.shared
+    var loadedExtensions: [WebExtension] = []
+
     func toggleTopbar() {
         switch Topbar {
         case .hidden:
@@ -20,6 +26,25 @@ class AltoState: GenaricState {
         case .active:
             Topbar = .hidden
         }
+    }
+
+    // MARK: - Extension Management
+
+    func loadExtension(from url: URL) async {
+        guard isExtensionsEnabled else { return }
+
+        do {
+            try await extensionManager.loadExtension(from: url)
+            // Refresh loaded extensions list
+            loadedExtensions = Array(extensionManager.loadedExtensions.values)
+        } catch {
+            print("Failed to load extension: \(error)")
+        }
+    }
+
+    func unloadExtension(id: String) {
+        extensionManager.unloadExtension(id: id)
+        loadedExtensions = Array(extensionManager.loadedExtensions.values)
     }
 }
 

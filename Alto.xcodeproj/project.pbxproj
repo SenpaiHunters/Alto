@@ -7,8 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		C49770FD2E02F27500CD80AF /* OpenADK.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C49770FC2E02F27500CD80AF /* OpenADK.framework */; };
-		C49770FE2E02F27500CD80AF /* OpenADK.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = C49770FC2E02F27500CD80AF /* OpenADK.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		3E5E2F752E069608009C5282 /* OpenADK in Frameworks */ = {isa = PBXBuildFile; productRef = 3E5E2F742E069608009C5282 /* OpenADK */; };
 		C4D5A48B2DFFD4E700002E71 /* SwiftSoup in Frameworks */ = {isa = PBXBuildFile; productRef = C4D5A48A2DFFD4E700002E71 /* SwiftSoup */; };
 		C4E36BE02DCEDCB200B049A3 /* Algorithms in Frameworks */ = {isa = PBXBuildFile; productRef = C4E36BDF2DCEDCB200B049A3 /* Algorithms */; };
 /* End PBXBuildFile section */
@@ -37,7 +36,6 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				C49770FE2E02F27500CD80AF /* OpenADK.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -77,8 +75,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				3E5E2F752E069608009C5282 /* OpenADK in Frameworks */,
 				C4E36BE02DCEDCB200B049A3 /* Algorithms in Frameworks */,
-				C49770FD2E02F27500CD80AF /* OpenADK.framework in Frameworks */,
 				C4D5A48B2DFFD4E700002E71 /* SwiftSoup in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -150,6 +148,7 @@
 			packageProductDependencies = (
 				C4E36BDF2DCEDCB200B049A3 /* Algorithms */,
 				C4D5A48A2DFFD4E700002E71 /* SwiftSoup */,
+				3E5E2F742E069608009C5282 /* OpenADK */,
 			);
 			productName = Alto;
 			productReference = C4E36B4D2DCEB6C200B049A3 /* Alto.app */;
@@ -230,7 +229,7 @@
 			packageReferences = (
 				C4E36BDE2DCEDCB200B049A3 /* XCRemoteSwiftPackageReference "swift-algorithms" */,
 				C4D5A3642DFFD37C00002E71 /* XCRemoteSwiftPackageReference "SwiftSoup" */,
-				3E5E9D832E05A3E30072BA7C /* XCLocalSwiftPackageReference "../OpenADK" */,
+				3E5E2F732E069608009C5282 /* XCLocalSwiftPackageReference "../OpenADK" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = C4E36B4E2DCEB6C200B049A3 /* Products */;
@@ -376,12 +375,13 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = Alto/Configurations/Alto.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;
-				DEVELOPMENT_TEAM = 5TQWF3R63P;
+				DEVELOPMENT_TEAM = DC484S2P7A;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -397,6 +397,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
+				SYSTEM_FRAMEWORK_SEARCH_PATHS = "$(inherited)";
 			};
 			name = Development;
 		};
@@ -561,12 +562,13 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = Alto/Configurations/Alto.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;
-				DEVELOPMENT_TEAM = 5TQWF3R63P;
+				DEVELOPMENT_TEAM = DC484S2P7A;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -582,6 +584,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
+				SYSTEM_FRAMEWORK_SEARCH_PATHS = "$(inherited)";
 			};
 			name = Debug;
 		};
@@ -590,12 +593,13 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = Alto/Configurations/Alto.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;
-				DEVELOPMENT_TEAM = 5TQWF3R63P;
+				DEVELOPMENT_TEAM = DC484S2P7A;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -611,6 +615,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
+				SYSTEM_FRAMEWORK_SEARCH_PATHS = "$(inherited)";
 			};
 			name = Release;
 		};
@@ -732,7 +737,7 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
-		3E5E9D832E05A3E30072BA7C /* XCLocalSwiftPackageReference "../OpenADK" */ = {
+		3E5E2F732E069608009C5282 /* XCLocalSwiftPackageReference "../OpenADK" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = ../OpenADK;
 		};
@@ -758,6 +763,10 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		3E5E2F742E069608009C5282 /* OpenADK */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = OpenADK;
+		};
 		C4D5A48A2DFFD4E700002E71 /* SwiftSoup */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = C4D5A3642DFFD37C00002E71 /* XCRemoteSwiftPackageReference "SwiftSoup" */;

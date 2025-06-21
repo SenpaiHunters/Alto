@@ -6,8 +6,25 @@ import SwiftUI
 
 struct SettingsView: View {
     @Bindable var preferences = PreferencesManager.shared
+    @Environment(AltoState.self) private var altoState
 
     var body: some View {
+        TabView {
+            settingsForm
+                .tabItem {
+                    Label("General", systemImage: "gear")
+                }
+
+            ExtensionsSettingsView()
+                .tabItem {
+                    Label("Extensions", systemImage: "puzzlepiece.extension")
+                }
+        }
+        .frame(maxWidth: 500, maxHeight: 600)
+        .preferredColorScheme(PreferencesManager.shared.colorScheme)
+    }
+
+    private var settingsForm: some View {
         Form {
             Section("Appearance") {
                 Picker("Theme", selection: $preferences.storedColorScheme) {
@@ -66,8 +83,6 @@ struct SettingsView: View {
             }
         }
         .padding(10)
-        .frame(maxWidth: 400, maxHeight: 500)
-        .preferredColorScheme(PreferencesManager.shared.colorScheme)
     }
 }
 
