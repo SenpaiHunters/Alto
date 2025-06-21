@@ -1,3 +1,9 @@
+//
+//  DragAndDropViewModel.swift
+//  Alto
+//
+//  Created by Kami on 21/06/2025.
+//
 
 import Algorithms
 import Observation
@@ -8,17 +14,11 @@ import UniformTypeIdentifiers
 @Observable
 class DropZoneViewModel {
     var tabLocation: any TabLocationProtocol
-    var state: AltoState
-
+    let state: AltoState
     var isTargeted = false
 
-    var displayedTabs: [TabRepresentation] {
-        tabLocation.tabs
-    }
-
-    var isEmpty: Bool {
-        tabLocation.tabs.isEmpty
-    }
+    var displayedTabs: [TabRepresentation] { tabLocation.tabs }
+    var isEmpty: Bool { tabLocation.tabs.isEmpty }
 
     init(state: AltoState, tabLocation: any TabLocationProtocol) {
         self.state = state
@@ -26,19 +26,17 @@ class DropZoneViewModel {
     }
 
     func onDrop(droppedTabs: [TabRepresentation], location: CGPoint) -> Bool {
-        if isEmpty {
-            /// this goes through each item from the dropped payload
-            for tab in droppedTabs {
-                if let location = Alto.shared.getTab(id: tab.id)?.location {
-                    location.removeTab(id: tab.id)
-                    Alto.shared.getTab(id: tab.id)?.location = tabLocation
-                }
-            }
+        guard isEmpty else { return true }
 
-            /// ensures there are no duplicates of the dropped tabs
-            let allTabs = tabLocation.tabs + droppedTabs
-            tabLocation.tabs = Array(allTabs.uniqued())
+        for tab in droppedTabs {
+            guard let currentLocation = Alto.shared.getTab(id: tab.id)?.location,
+                  let altoTab = Alto.shared.getTab(id: tab.id) else { continue }
+
+            currentLocation.removeTab(id: tab.id)
+            altoTab.location = tabLocation
         }
+
+        tabLocation.tabs = Array((tabLocation.tabs + droppedTabs).uniqued())
         return true
     }
 

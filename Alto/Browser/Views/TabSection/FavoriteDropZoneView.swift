@@ -1,65 +1,83 @@
-// FavoriteDropZoneView.swift
-
 import OpenADK
 import SwiftUI
 
 // MARK: - FavoriteDropZoneView
 
 struct FavoriteDropZoneView: View {
-    var model: FavoriteDropZoneViewModel
+    let model: FavoriteDropZoneViewModel
 
     var body: some View {
         HStack {
-            ZStack {
+            leadingDropZone
+            mainContent
+        }
+    }
+
+    private var leadingDropZone: some View {
+        Rectangle()
+            .fill(.clear)
+            .frame(width: 0)
+            .background(
                 Rectangle()
-                    .fill(.red.opacity(0))
+                    .fill(.clear)
                     .frame(width: 30)
                     .dropDestination(for: TabRepresentation.self) { droppedTabs, location in
-                        model
-                            .onDrop(
-                                droppedTabs: droppedTabs,
-                                location: location
-                            ) /// this will calculate the closses insertion point
+                        model.onDrop(droppedTabs: droppedTabs, location: location)
                     } isTargeted: { isTargeted in
                         model.handleTargeted(isTargeted)
                     }
-            }
-            .frame(width: 0)
+            )
             .zIndex(12)
+    }
 
-            if !model.showEmptyDropIndicator {
-                if !model.isEmpty {
-                    if let tabLocation = model.tabLocation as? TabLocation {
-                        hoverZoneView(model: HoverZoneViewModel(
-                            state: model.state,
-                            tabLocation: tabLocation,
-                            placement: .start
-                        ))
-                    }
+    private var mainContent: some View {
+        Group {
+            if model.showEmptyDropIndicator {
+                emptyFavoritesView
+            } else if !model.isEmpty {
+                favoriteTabsContent
+            }
+        }
+    }
 
-                    ForEach(Array(model.displayedTabs.enumerated()), id: \.element.id) { index, tabItem in
-                        AltoTabView(model: TabViewModel(state: model.state, draggingViewModel: model, tab: tabItem))
-                        if let tabLocation = model.tabLocation as? TabLocation {
-                            hoverZoneView(model: HoverZoneViewModel(
-                                state: model.state,
-                                tabLocation: tabLocation,
-                                index: index
-                            ))
-                        }
-                    }
-                    Spacer()
+    private var emptyFavoritesView: some View {
+        EmptyFavoritesView()
+            .dropDestination(for: TabRepresentation.self) { droppedTabs, location in
+                model.onDrop(droppedTabs: droppedTabs, location: location)
+            } isTargeted: { isTargeted in
+                model.handleTargeted(isTargeted)
+            }
+    }
+
+    private var favoriteTabsContent: some View {
+        Group {
+            hoverZone(placement: .start)
+
+            ForEach(Array(model.displayedTabs.enumerated()), id: \.element.id) { index, tabItem in
+                AltoTabView(model: TabViewModel(state: model.state, draggingViewModel: model, tab: tabItem))
+                hoverZone(for: index)
+            }
+
+            Spacer()
+        }
+    }
+
+    private func hoverZone(for index: Int? = nil, placement: HoverZoneViewModel.ZonePlacement = .central) -> some View {
+        Group {
+            if let tabLocation = model.tabLocation as? TabLocation {
+                if let index {
+                    HoverZoneView(model: HoverZoneViewModel(
+                        state: model.state,
+                        tabLocation: tabLocation,
+                        index: index
+                    ))
+                } else {
+                    HoverZoneView(model: HoverZoneViewModel(
+                        state: model.state,
+                        tabLocation: tabLocation,
+                        placement: placement
+                    ))
                 }
-            } else {
-                EmptyFavoritesView()
-                    .dropDestination(for: TabRepresentation.self) { droppedTabs, location in
-                        model
-                            .onDrop(
-                                droppedTabs: droppedTabs,
-                                location: location
-                            ) /// this will calculate the closses insertion point
-                    } isTargeted: { isTargeted in
-                        model.handleTargeted(isTargeted)
-                    }
             }
         }
     }

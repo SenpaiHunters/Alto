@@ -9,7 +9,7 @@ class TabViewModel {
     var draggingViewModel: DropZoneViewModel
 
     var altoTab: (any TabProtocol)? {
-        return Alto.shared.getTab(id: tab.id)
+        Alto.shared.getTab(id: tab.id)
     }
 
     var tabTitle: String {

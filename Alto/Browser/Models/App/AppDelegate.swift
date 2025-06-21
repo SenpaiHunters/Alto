@@ -16,7 +16,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         windowConfig.stateFactory = { AltoState() }
 
         windowConfig.setView { state in
-            BrowserView(genaricState: state)
+            // Cast the state to AltoState since we know it's created by our factory
+            guard let altoState = state as? AltoState else {
+                fatalError("Expected AltoState from factory")
+            }
+            return BrowserView(state: altoState)
         }
 
         windowManager.configuration = windowConfig

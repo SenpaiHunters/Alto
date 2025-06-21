@@ -1,18 +1,8 @@
-//
-
 import OpenADK
 import SwiftUI
 
-struct BrowserView: View {
-    var genaricState: any StateProtocol
-
-    // If you can find a better solution please make a pr!
-    var state: AltoState? {
-        if let altoState = genaricState as? AltoState {
-            return altoState
-        }
-        return nil
-    }
+struct BrowserView<State: StateProtocol>: View where State == AltoState {
+    var state: State
 
     var body: some View {
         ZStack {

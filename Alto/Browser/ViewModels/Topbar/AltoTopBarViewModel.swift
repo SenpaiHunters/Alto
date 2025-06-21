@@ -1,9 +1,17 @@
 //
+//  AltoTopBarViewModel.swift
+//  Alto
+//
+//  Created by Kami on 21/06/2025.
+//
+
 import Observation
 
+// MARK: - AltoTopBarViewModel
+
 @Observable
-class AltoTopBarViewModel {
-    var state: AltoState
+final class AltoTopBarViewModel {
+    let state: AltoState
     var topbarState: TopbarState = .hidden
 
     enum TopbarState {

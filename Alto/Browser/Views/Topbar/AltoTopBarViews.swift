@@ -17,16 +17,16 @@ struct AltoTopBar: View {
             }, icon: "arrow.left", active: model.state.currentSpace?.currentTab?.content[0].canGoBack ?? false)
                 .frame(height: 30)
                 .fixedSize()
-                .keyboardShortcut(Shortcuts.goBack)
-                .keyboardShortcut(Shortcuts.goBackAlt)
+                .keyboardShortcut(Shortcuts.Tab.goBack)
+                .keyboardShortcut(Shortcuts.Tab.goBackAlt)
 
             AltoButton(action: {
                 model.state.currentSpace?.currentTab?.content[0].goForward()
             }, icon: "arrow.right", active: model.state.currentSpace?.currentTab?.content[0].canGoForward ?? false)
                 .frame(height: 30)
                 .fixedSize()
-                .keyboardShortcut(Shortcuts.goForward)
-                .keyboardShortcut(Shortcuts.goForwardAlt)
+                .keyboardShortcut(Shortcuts.Tab.goForward)
+                .keyboardShortcut(Shortcuts.Tab.goForwardAlt)
 
             FavoriteDropZoneView(model: FavoriteDropZoneViewModel(
                 state: model.state,

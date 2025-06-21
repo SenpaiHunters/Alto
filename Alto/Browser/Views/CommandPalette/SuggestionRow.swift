@@ -5,13 +5,13 @@
 //  Created by Hunor Zoltáni on 19.06.2025.
 //
 
-import SwiftUI
 import OpenADK
+import SwiftUI
 
 struct SuggestionRow: View {
     let suggestion: SearchSuggestion
     let isSelected: Bool
-    
+
     var body: some View {
         HStack(spacing: 14) {
             // Icon
@@ -19,7 +19,7 @@ struct SuggestionRow: View {
                 .foregroundColor(.secondary)
                 .font(.system(size: 14, weight: .medium))
                 .frame(width: 16, height: 16)
-            
+
             // Content
             VStack(alignment: .leading, spacing: 3) {
                 Text(suggestion.text)
@@ -29,7 +29,7 @@ struct SuggestionRow: View {
                     .truncationMode(.tail)
                     .allowsHitTesting(false)
             }
-            
+
             Spacer()
         }
         .padding(.horizontal, 20)
@@ -48,4 +48,3 @@ struct SuggestionRow: View {
         .contentShape(Rectangle())
     }
 }
-

@@ -1,16 +1,16 @@
-//
-
 import AppKit
 import SwiftUI
 
-// Creates a representable so window can use appkit exclusive Materials
+// MARK: - VisualEffectView
+
 struct VisualEffectView: NSViewRepresentable {
-    var material: NSVisualEffectView.Material
-    var state: NSVisualEffectView.State
+    let material: NSVisualEffectView.Material
+    let state: NSVisualEffectView.State
+
     func makeNSView(context: Context) -> NSVisualEffectView {
         let view = NSVisualEffectView()
         view.material = material
-        view.state = .active
+        view.state = state
         view.blendingMode = .behindWindow
         return view
     }
