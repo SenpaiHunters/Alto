@@ -11,8 +11,10 @@ struct AltoTabView: View {
             Text(model.tabTitle)
 
             Spacer()
-            
-            closeButton(model: model)
+
+            if model.isHovered {
+                closeButton(model: model) //
+            }
         }
         .padding(4)
         .frame(width: 150)
@@ -29,7 +31,7 @@ struct AltoTabView: View {
             }
         )
         .simultaneousGesture(
-            TapGesture(count: 2).onEnded {
+            TapGesture(count: 1).onEnded {
                 model.handleSingleClick()
             }
         )

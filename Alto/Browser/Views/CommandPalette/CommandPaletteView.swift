@@ -5,15 +5,14 @@
 //  Created by Hunor Zoltáni on 19.06.2025.
 //
 
-import SwiftUI
 import OpenADK
+import SwiftUI
 
 struct CommandPaletteView: View {
     @Environment(AltoState.self) private var altoState
     @FocusState private var isSearchFocused: Bool
     @State private var viewModel: ViewModel = .init()
-    
-    
+
     var body: some View {
         ZStack {
 //            Dimming Layer
@@ -22,15 +21,16 @@ struct CommandPaletteView: View {
                 .onTapGesture {
                     viewModel.handleDismiss(altoState: altoState)
                 }
-            
+
             VStack {
                 VStack(spacing: 0) {
 //                    MARK: - Search Bar
+
                     HStack(spacing: 12) {
                         Image(systemName: viewModel.searchIcon)
                             .foregroundStyle(.secondary)
                             .font(.system(size: 16, weight: .medium))
-                        
+
                         TextField("Search or enter address", text: $viewModel.searchText)
                             .textFieldStyle(.plain)
                             .font(.system(size: 16, weight: .regular))
@@ -38,10 +38,14 @@ struct CommandPaletteView: View {
                             .onSubmit {
                                 let textToSubmit = viewModel.selectedIndex == -1 ? viewModel.searchText :
                                     viewModel.searchManager.suggestions[viewModel.selectedIndex].text
-                                
-                                viewModel.handlePerformSearch(text: textToSubmit, tabManager: altoState.tabManager as? TabsManager, altoState: altoState)
+
+                                viewModel.handlePerformSearch(
+                                    text: textToSubmit,
+                                    tabManager: altoState.tabManager as? TabsManager,
+                                    altoState: altoState
+                                )
                             }
-                            .onChange(of: viewModel.searchText) { oldValue, newValue in
+                            .onChange(of: viewModel.searchText) { _, _ in
                                 viewModel.resetSelection()
                             }
                             .onKeyPress(.escape) {
@@ -49,7 +53,7 @@ struct CommandPaletteView: View {
                                 return .handled
                             }
                             .onKeyPress(.tab) {
-                                return .handled
+                                .handled
                             }
                             .onKeyPress(.upArrow) {
                                 viewModel.handleUpArrow()
@@ -59,9 +63,9 @@ struct CommandPaletteView: View {
                                 viewModel.handleDownArrow()
                                 return .handled
                             }
-                            .onChange(of: altoState.isShowingCommandPalette) { oldValue, newValue in
+                            .onChange(of: altoState.isShowingCommandPalette) { _, newValue in
                                 viewModel.handlePaletteVisibilityChange(newValue: newValue)
-                                
+
 //                                Fixes: Sometimes the Search Bar can become unfocused.
                                 if newValue {
                                     isSearchFocused = true
@@ -73,19 +77,27 @@ struct CommandPaletteView: View {
                     .onHover { _ in
                         viewModel.resetSelection()
                     }
-                    
+
 //                    MARK: - Suggestions List
+
                     if !viewModel.searchManager.suggestions.isEmpty {
                         Divider()
                             .frame(height: 0.5)
                             .background(Color.secondary.opacity(0.1))
                             .padding(.horizontal, 20)
-                        
+
                         VStack(spacing: 0) {
-                            ForEach(Array(viewModel.searchManager.suggestions.enumerated()), id: \.element.id) { index, suggestion in
+                            ForEach(
+                                Array(viewModel.searchManager.suggestions.enumerated()),
+                                id: \.element.id
+                            ) { index, suggestion in
                                 SuggestionRow(suggestion: suggestion, isSelected: viewModel.selectedIndex == index)
                                     .onTapGesture {
-                                        viewModel.handlePerformSearch(text: suggestion.text, tabManager: altoState.tabManager as? TabsManager, altoState: altoState)
+                                        viewModel.handlePerformSearch(
+                                            text: suggestion.text,
+                                            tabManager: altoState.tabManager as? TabsManager,
+                                            altoState: altoState
+                                        )
                                     }
                                     .onHover { _ in
                                         viewModel.setSelectedIndex(index)
@@ -103,7 +115,7 @@ struct CommandPaletteView: View {
                 .task(id: viewModel.searchText) {
                     viewModel.fetchSuggestions()
                 }
-                
+
                 Spacer()
             }
             .padding(.top, 250)
