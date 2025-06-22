@@ -6,311 +6,646 @@
 //
 
 import Foundation
+import os.log
 import UserNotifications
 import WebKit
 
 // MARK: - WebExtensionsAPIBridge
 
 @MainActor
-class WebExtensionsAPIBridge: NSObject, WKScriptMessageHandler {
+final class WebExtensionsAPIBridge: NSObject, WKScriptMessageHandler {
     static let shared = WebExtensionsAPIBridge()
+
     private let extensionManager = ExtensionManager.shared
-    private var messageHandlers: [String: (WKScriptMessage) -> ()] = [:]
-    private var webViews: Set<WKWebView> = []
-    private var extensionStorage: [String: [String: Any]] = [:]
-    private var eventListeners: [String: [(WKWebView, String)]] = [:]
+    private let storageManager = ExtensionStorageManager()
+    private let logger = Logger(subsystem: "Alto.WebExtensions", category: "APIBridge")
+
+    // Active WebViews and their contexts
+    private var activeWebViews: Set<WKWebView> = []
+    private var webViewContexts: [WKWebView: ExtensionContext] = [:]
+
+    // Event listeners and callbacks
+    private var eventListeners: [String: [EventListener]] = [:]
+    private var pendingCallbacks: [String: APICallback] = [:]
+    private var callbackCounter = 0
+
+    // Tab management
+    private var tabIdCounter = 1
+    private var webViewToTabId: [WKWebView: Int] = [:]
+    private var tabIdToWebView: [Int: WKWebView] = [:]
 
     override init() {
         super.init()
-        setupMessageHandlers()
-        setupNotificationCenter()
+        setupNotifications()
+        logger.info("WebExtensions API Bridge initialized")
+    }
+
+    // MARK: - WebView Management
+
+    func configureWebView(_ webView: WKWebView, for extensionId: String? = nil) {
+        activeWebViews.insert(webView)
+
+        let tabId = tabIdCounter
+        tabIdCounter += 1
+
+        webViewToTabId[webView] = tabId
+        tabIdToWebView[tabId] = webView
+
+        let context = ExtensionContext(
+            extensionId: extensionId,
+            tabId: tabId,
+            webView: webView
+        )
+        webViewContexts[webView] = context
+
+        // Add message handlers
+        let userContentController = webView.configuration.userContentController
+        userContentController.add(self, name: "altoExtensionAPI")
+
+        // Inject the API bridge
+        injectAPIBridge(into: webView)
+
+        logger.info("Configured WebView for extension context - Tab ID: \(tabId)")
+    }
+
+    func removeWebView(_ webView: WKWebView) {
+        guard let tabId = webViewToTabId[webView] else { return }
+
+        activeWebViews.remove(webView)
+        webViewContexts.removeValue(forKey: webView)
+        webViewToTabId.removeValue(forKey: webView)
+        tabIdToWebView.removeValue(forKey: tabId)
+
+        logger.info("Removed WebView - Tab ID: \(tabId)")
     }
 
     // MARK: - WKScriptMessageHandler
 
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
-        guard let webView = message.webView else { return }
-
-        // Handle console messages from extensions
-        if message.name == "altoExtensions" {
-            if let body = message.body as? [String: Any],
-               let type = body["type"] as? String,
-               type == "console" {
-                let level = body["level"] as? String ?? "log"
-                let msg = body["message"] as? String ?? ""
-                print("🖥️ Extension Console [\(level.uppercased())]: \(msg)")
-                return
-            }
-        }
-
-        guard let handler = messageHandlers[message.name] else {
-            print("⚠️ No handler for message: \(message.name)")
-            print("📋 Message body: \(message.body)")
+        guard let webView = message.webView,
+              let context = webViewContexts[webView],
+              let body = message.body as? [String: Any] else {
+            logger.error("Invalid message received")
             return
         }
 
-        print("🔌 WebExtensions API Call: \(message.name)")
-        handler(message)
+        handleAPICall(body, context: context, webView: webView)
     }
 
-    // MARK: - Setup
+    // MARK: - API Call Handling
 
-    private func setupMessageHandlers() {
-        // Core Chrome APIs
-        messageHandlers["chrome.tabs"] = handleTabsAPI
-        messageHandlers["chrome.runtime"] = handleRuntimeAPI
-        messageHandlers["chrome.storage"] = handleStorageAPI
-        messageHandlers["chrome.webRequest"] = handleWebRequestAPI
-        messageHandlers["chrome.contextMenus"] = handleContextMenusAPI
-        messageHandlers["chrome.notifications"] = handleNotificationsAPI
-        messageHandlers["chrome.bookmarks"] = handleBookmarksAPI
-        messageHandlers["chrome.history"] = handleHistoryAPI
-        messageHandlers["chrome.cookies"] = handleCookiesAPI
-        messageHandlers["chrome.webNavigation"] = handleWebNavigationAPI
-        messageHandlers["chrome.declarativeNetRequest"] = handleDeclarativeNetRequestAPI
-        messageHandlers["chrome.action"] = handleActionAPI
-        messageHandlers["chrome.scripting"] = handleScriptingAPI
-        messageHandlers["chrome.permissions"] = handlePermissionsAPI
+    private func handleAPICall(_ body: [String: Any], context: ExtensionContext, webView: WKWebView) {
+        guard let api = body["api"] as? String,
+              let method = body["method"] as? String else {
+            logger.error("Missing API or method in call")
+            return
+        }
 
-        // Browser API (Firefox/Safari style) - aliases
-        messageHandlers["browser.tabs"] = handleTabsAPI
-        messageHandlers["browser.runtime"] = handleRuntimeAPI
-        messageHandlers["browser.storage"] = handleStorageAPI
-        messageHandlers["browser.webRequest"] = handleWebRequestAPI
-        messageHandlers["browser.contextMenus"] = handleContextMenusAPI
-        messageHandlers["browser.notifications"] = handleNotificationsAPI
-        messageHandlers["browser.bookmarks"] = handleBookmarksAPI
-        messageHandlers["browser.history"] = handleHistoryAPI
+        let params = body["params"] as? [String: Any] ?? [:]
+        let callbackId = body["callbackId"] as? String
 
-        // Extension-specific handlers
-        messageHandlers["altoExtensions"] = handleAltoExtensionsAPI
-    }
+        logger.info("API Call: \(api).\(method)")
 
-    private func setupNotificationCenter() {
-        // Request notification permissions
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { _, error in
-            if let error {
-                print("Notification permission error: \(error)")
-            }
+        // Create callback handler
+        let callback = APICallback(id: callbackId, webView: webView)
+        if let callbackId {
+            pendingCallbacks[callbackId] = callback
+        }
+
+        // Route to appropriate handler
+        switch api {
+        case "chrome.tabs",
+             "browser.tabs":
+            handleTabsAPI(method: method, params: params, context: context, callback: callback)
+        case "chrome.runtime",
+             "browser.runtime":
+            handleRuntimeAPI(method: method, params: params, context: context, callback: callback)
+        case "chrome.storage",
+             "browser.storage":
+            handleStorageAPI(method: method, params: params, context: context, callback: callback)
+        case "chrome.webRequest",
+             "browser.webRequest":
+            handleWebRequestAPI(method: method, params: params, context: context, callback: callback)
+        case "chrome.contextMenus",
+             "browser.contextMenus":
+            handleContextMenusAPI(method: method, params: params, context: context, callback: callback)
+        case "chrome.notifications",
+             "browser.notifications":
+            handleNotificationsAPI(method: method, params: params, context: context, callback: callback)
+        case "chrome.action",
+             "chrome.browserAction",
+             "browser.action",
+             "browser.browserAction":
+            handleActionAPI(method: method, params: params, context: context, callback: callback)
+        case "chrome.scripting",
+             "browser.scripting":
+            handleScriptingAPI(method: method, params: params, context: context, callback: callback)
+        case "chrome.permissions",
+             "browser.permissions":
+            handlePermissionsAPI(method: method, params: params, context: context, callback: callback)
+        case "chrome.cookies",
+             "browser.cookies":
+            handleCookiesAPI(method: method, params: params, context: context, callback: callback)
+        case "chrome.history",
+             "browser.history":
+            handleHistoryAPI(method: method, params: params, context: context, callback: callback)
+        case "chrome.bookmarks",
+             "browser.bookmarks":
+            handleBookmarksAPI(method: method, params: params, context: context, callback: callback)
+        case "chrome.webNavigation",
+             "browser.webNavigation":
+            handleWebNavigationAPI(method: method, params: params, context: context, callback: callback)
+        case "chrome.declarativeNetRequest",
+             "browser.declarativeNetRequest":
+            handleDeclarativeNetRequestAPI(method: method, params: params, context: context, callback: callback)
+        case "chrome.i18n",
+             "browser.i18n":
+            handleI18nAPI(method: method, params: params, context: context, callback: callback)
+        default:
+            callback.error("Unsupported API: \(api)")
         }
     }
 
-    func configureWebView(_ webView: WKWebView) {
-        webViews.insert(webView)
-        let userContentController = webView.configuration.userContentController
+    // MARK: - Tabs API
 
-        // Add message handlers
-        for handlerName in messageHandlers.keys {
-            userContentController.add(self, name: handlerName)
-        }
-
-        // Inject WebExtensions API polyfill
-        let apiScript = WKUserScript(
-            source: generateWebExtensionsAPI(),
-            injectionTime: .atDocumentStart,
-            forMainFrameOnly: false
-        )
-
-        userContentController.addUserScript(apiScript)
-
-        // Inject content script support
-        let contentScriptSupport = WKUserScript(
-            source: generateContentScriptSupport(),
-            injectionTime: .atDocumentEnd,
-            forMainFrameOnly: false
-        )
-
-        userContentController.addUserScript(contentScriptSupport)
-    }
-
-    func removeWebView(_ webView: WKWebView) {
-        webViews.remove(webView)
-    }
-
-    // MARK: - API Handlers
-
-    private func handleTabsAPI(_ message: WKScriptMessage) {
-        guard let body = message.body as? [String: Any],
-              let method = body["method"] as? String else { return }
-
+    private func handleTabsAPI(
+        method: String,
+        params: [String: Any],
+        context: ExtensionContext,
+        callback: APICallback
+    ) {
         switch method {
         case "query":
-            handleTabsQuery(message, body)
+            let queryInfo = params["queryInfo"] as? [String: Any] ?? [:]
+            let tabs = queryTabs(queryInfo: queryInfo)
+            callback.success(tabs)
+
         case "create":
-            handleTabsCreate(message, body)
+            guard let createProperties = params["createProperties"] as? [String: Any] else {
+                callback.error("Invalid createProperties")
+                return
+            }
+            createTab(properties: createProperties, callback: callback)
+
         case "update":
-            handleTabsUpdate(message, body)
+            guard let tabId = params["tabId"] as? Int,
+                  let updateProperties = params["updateProperties"] as? [String: Any] else {
+                callback.error("Invalid parameters")
+                return
+            }
+            updateTab(tabId: tabId, properties: updateProperties, callback: callback)
+
         case "remove":
-            handleTabsRemove(message, body)
+            guard let tabIds = params["tabIds"] as? [Int] else {
+                callback.error("Invalid tabIds")
+                return
+            }
+            removeTabs(tabIds: tabIds, callback: callback)
+
         case "get":
-            handleTabsGet(message, body)
+            guard let tabId = params["tabId"] as? Int else {
+                callback.error("Invalid tabId")
+                return
+            }
+            getTab(tabId: tabId, callback: callback)
+
         case "executeScript":
-            handleTabsExecuteScript(message, body)
+            let tabId = params["tabId"] as? Int
+            guard let details = params["details"] as? [String: Any] else {
+                callback.error("Invalid script details")
+                return
+            }
+            executeScript(tabId: tabId, details: details, context: context, callback: callback)
+
         case "insertCSS":
-            handleTabsInsertCSS(message, body)
-        case "removeCSS":
-            handleTabsRemoveCSS(message, body)
+            let tabId = params["tabId"] as? Int
+            guard let details = params["details"] as? [String: Any] else {
+                callback.error("Invalid CSS details")
+                return
+            }
+            insertCSS(tabId: tabId, details: details, callback: callback)
+
         case "sendMessage":
-            handleTabsSendMessage(message, body)
+            guard let tabId = params["tabId"] as? Int,
+                  let message = params["message"] else {
+                callback.error("Invalid parameters")
+                return
+            }
+            sendMessageToTab(tabId: tabId, message: message, callback: callback)
+
         case "reload":
-            handleTabsReload(message, body)
+            let tabId = params["tabId"] as? Int
+            let reloadProperties = params["reloadProperties"] as? [String: Any] ?? [:]
+            reloadTab(tabId: tabId, properties: reloadProperties, callback: callback)
+
         default:
-            sendErrorResponse(to: message, error: "Unknown tabs method: \(method)")
+            callback.error("Unknown tabs method: \(method)")
         }
     }
 
-    private func handleRuntimeAPI(_ message: WKScriptMessage) {
-        guard let body = message.body as? [String: Any],
-              let method = body["method"] as? String else { return }
+    // MARK: - Runtime API
 
+    private func handleRuntimeAPI(
+        method: String,
+        params: [String: Any],
+        context: ExtensionContext,
+        callback: APICallback
+    ) {
         switch method {
         case "sendMessage":
-            handleRuntimeSendMessage(message, body)
+            guard let message = params["message"] else {
+                callback.error("Invalid message")
+                return
+            }
+            sendRuntimeMessage(message: message, context: context, callback: callback)
+
         case "getManifest":
-            handleRuntimeGetManifest(message, body)
+            getManifest(context: context, callback: callback)
+
         case "getURL":
-            handleRuntimeGetURL(message, body)
+            guard let path = params["path"] as? String else {
+                callback.error("Invalid path")
+                return
+            }
+            let url = getExtensionURL(path: path, context: context)
+            callback.success(["url": url])
+
         case "getPlatformInfo":
-            handleRuntimeGetPlatformInfo(message, body)
+            let platformInfo = getPlatformInfo()
+            callback.success(platformInfo)
+
         case "getBrowserInfo":
-            handleRuntimeGetBrowserInfo(message, body)
+            let browserInfo = getBrowserInfo()
+            callback.success(browserInfo)
+
         case "openOptionsPage":
-            handleRuntimeOpenOptionsPage(message, body)
+            openOptionsPage(context: context, callback: callback)
+
         case "setUninstallURL":
-            handleRuntimeSetUninstallURL(message, body)
+            let url = params["url"] as? String
+            setUninstallURL(url: url, context: context, callback: callback)
+
         case "reload":
-            handleRuntimeReload(message, body)
+            reloadExtension(context: context, callback: callback)
+
         default:
-            sendErrorResponse(to: message, error: "Unknown runtime method: \(method)")
+            callback.error("Unknown runtime method: \(method)")
         }
     }
 
-    private func handleStorageAPI(_ message: WKScriptMessage) {
-        guard let body = message.body as? [String: Any],
-              let method = body["method"] as? String else { return }
+    // MARK: - Storage API
+
+    private func handleStorageAPI(
+        method: String,
+        params: [String: Any],
+        context: ExtensionContext,
+        callback: APICallback
+    ) {
+        guard let extensionId = context.extensionId else {
+            callback.error("No extension context")
+            return
+        }
+
+        let area = StorageArea(rawValue: params["area"] as? String ?? "local") ?? .local
 
         switch method {
         case "get":
-            handleStorageGet(message, body)
+            let keys = parseStorageKeys(params["keys"])
+            let result = storageManager.get(extensionId: extensionId, area: area, keys: keys)
+            callback.success(result)
+
         case "set":
-            handleStorageSet(message, body)
+            guard let items = params["items"] as? [String: Any] else {
+                callback.error("Invalid items")
+                return
+            }
+            do {
+                try storageManager.set(extensionId: extensionId, area: area, items: items)
+                callback.success(nil)
+            } catch {
+                callback.error(error.localizedDescription)
+            }
+
         case "remove":
-            handleStorageRemove(message, body)
+            guard let keys = params["keys"] as? [String] else {
+                callback.error("Invalid keys")
+                return
+            }
+            storageManager.remove(extensionId: extensionId, area: area, keys: keys)
+            callback.success(nil)
+
         case "clear":
-            handleStorageClear(message, body)
+            storageManager.clear(extensionId: extensionId, area: area)
+            callback.success(nil)
+
         case "getBytesInUse":
-            handleStorageGetBytesInUse(message, body)
+            let keys = params["keys"] as? [String]
+            let bytes = storageManager.getBytesInUse(extensionId: extensionId, area: area, keys: keys)
+            callback.success(["bytesInUse": bytes])
+
         default:
-            sendErrorResponse(to: message, error: "Unknown storage method: \(method)")
+            callback.error("Unknown storage method: \(method)")
         }
     }
 
-    private func handleWebRequestAPI(_ message: WKScriptMessage) {
-        guard let body = message.body as? [String: Any],
-              let method = body["method"] as? String else { return }
+    // MARK: - Web Request API
 
+    private func handleWebRequestAPI(
+        method: String,
+        params: [String: Any],
+        context: ExtensionContext,
+        callback: APICallback
+    ) {
         switch method {
         case "addListener":
-            handleWebRequestAddListener(message, body)
+            guard let eventType = params["eventType"] as? String else {
+                callback.error("Invalid eventType")
+                return
+            }
+            addWebRequestListener(eventType: eventType, context: context, callback: callback)
+
         case "removeListener":
-            handleWebRequestRemoveListener(message, body)
+            guard let eventType = params["eventType"] as? String else {
+                callback.error("Invalid eventType")
+                return
+            }
+            removeWebRequestListener(eventType: eventType, context: context, callback: callback)
+
         default:
-            print("WebRequest API called: \(method) - \(message.body)")
+            callback.error("Unknown webRequest method: \(method)")
         }
     }
 
-    private func handleContextMenusAPI(_ message: WKScriptMessage) {
-        guard let body = message.body as? [String: Any],
-              let method = body["method"] as? String else { return }
+    // MARK: - Context Menus API
 
+    private func handleContextMenusAPI(
+        method: String,
+        params: [String: Any],
+        context: ExtensionContext,
+        callback: APICallback
+    ) {
         switch method {
         case "create":
-            handleContextMenusCreate(message, body)
+            guard let createProperties = params["createProperties"] as? [String: Any] else {
+                callback.error("Invalid createProperties")
+                return
+            }
+            createContextMenu(properties: createProperties, context: context, callback: callback)
+
         case "update":
-            handleContextMenusUpdate(message, body)
+            guard let id = params["id"] as? String,
+                  let updateProperties = params["updateProperties"] as? [String: Any] else {
+                callback.error("Invalid parameters")
+                return
+            }
+            updateContextMenu(id: id, properties: updateProperties, context: context, callback: callback)
+
         case "remove":
-            handleContextMenusRemove(message, body)
+            guard let menuItemId = params["menuItemId"] as? String else {
+                callback.error("Invalid menuItemId")
+                return
+            }
+            removeContextMenu(id: menuItemId, context: context, callback: callback)
+
         case "removeAll":
-            handleContextMenusRemoveAll(message, body)
+            removeAllContextMenus(context: context, callback: callback)
+
         default:
-            print("ContextMenus API called: \(method)")
+            callback.error("Unknown contextMenus method: \(method)")
         }
     }
 
-    private func handleNotificationsAPI(_ message: WKScriptMessage) {
-        guard let body = message.body as? [String: Any],
-              let method = body["method"] as? String else { return }
+    // MARK: - Notifications API
 
+    private func handleNotificationsAPI(
+        method: String,
+        params: [String: Any],
+        context: ExtensionContext,
+        callback: APICallback
+    ) {
         switch method {
         case "create":
-            handleNotificationsCreate(message, body)
+            let notificationId = params["notificationId"] as? String ?? "notification_\(Date().timeIntervalSince1970)"
+            guard let options = params["options"] as? [String: Any] else {
+                callback.error("Invalid options")
+                return
+            }
+            createNotification(id: notificationId, options: options, callback: callback)
+
         case "update":
-            handleNotificationsUpdate(message, body)
+            guard let notificationId = params["notificationId"] as? String,
+                  let options = params["options"] as? [String: Any] else {
+                callback.error("Invalid parameters")
+                return
+            }
+            updateNotification(id: notificationId, options: options, callback: callback)
+
         case "clear":
-            handleNotificationsClear(message, body)
+            guard let notificationId = params["notificationId"] as? String else {
+                callback.error("Invalid notificationId")
+                return
+            }
+            clearNotification(id: notificationId, callback: callback)
+
         case "getAll":
-            handleNotificationsGetAll(message, body)
+            getAllNotifications(callback: callback)
+
         default:
-            print("Notifications API called: \(method)")
+            callback.error("Unknown notifications method: \(method)")
         }
     }
 
-    private func handleBookmarksAPI(_ message: WKScriptMessage) {
-        print("Bookmarks API called: \(message.body)")
-        sendResponse(to: message, data: ["success": true])
+    // MARK: - Action API
+
+    private func handleActionAPI(
+        method: String,
+        params: [String: Any],
+        context: ExtensionContext,
+        callback: APICallback
+    ) {
+        switch method {
+        case "setIcon":
+            let details = params["details"] as? [String: Any] ?? [:]
+            setActionIcon(details: details, context: context, callback: callback)
+
+        case "setTitle":
+            let details = params["details"] as? [String: Any] ?? [:]
+            setActionTitle(details: details, context: context, callback: callback)
+
+        case "setBadgeText":
+            let details = params["details"] as? [String: Any] ?? [:]
+            setActionBadgeText(details: details, context: context, callback: callback)
+
+        case "setBadgeBackgroundColor":
+            let details = params["details"] as? [String: Any] ?? [:]
+            setActionBadgeBackgroundColor(details: details, context: context, callback: callback)
+
+        case "setPopup":
+            let details = params["details"] as? [String: Any] ?? [:]
+            setActionPopup(details: details, context: context, callback: callback)
+
+        default:
+            callback.error("Unknown action method: \(method)")
+        }
     }
 
-    private func handleHistoryAPI(_ message: WKScriptMessage) {
-        print("History API called: \(message.body)")
-        sendResponse(to: message, data: ["success": true])
+    // MARK: - Scripting API
+
+    private func handleScriptingAPI(
+        method: String,
+        params: [String: Any],
+        context: ExtensionContext,
+        callback: APICallback
+    ) {
+        switch method {
+        case "executeScript":
+            guard let injection = params["injection"] as? [String: Any] else {
+                callback.error("Invalid injection")
+                return
+            }
+            executeScriptV3(injection: injection, context: context, callback: callback)
+
+        case "insertCSS":
+            guard let injection = params["injection"] as? [String: Any] else {
+                callback.error("Invalid injection")
+                return
+            }
+            insertCSSV3(injection: injection, context: context, callback: callback)
+
+        case "removeCSS":
+            guard let injection = params["injection"] as? [String: Any] else {
+                callback.error("Invalid injection")
+                return
+            }
+            removeCSSV3(injection: injection, context: context, callback: callback)
+
+        default:
+            callback.error("Unknown scripting method: \(method)")
+        }
     }
 
-    private func handleCookiesAPI(_ message: WKScriptMessage) {
-        print("Cookies API called: \(message.body)")
-        sendResponse(to: message, data: ["success": true])
+    // MARK: - Permissions API
+
+    private func handlePermissionsAPI(
+        method: String,
+        params: [String: Any],
+        context: ExtensionContext,
+        callback: APICallback
+    ) {
+        switch method {
+        case "contains":
+            guard let permissions = params["permissions"] as? [String: Any] else {
+                callback.error("Invalid permissions")
+                return
+            }
+            let result = checkPermissions(permissions: permissions, context: context)
+            callback.success(["result": result])
+
+        case "request":
+            guard let permissions = params["permissions"] as? [String: Any] else {
+                callback.error("Invalid permissions")
+                return
+            }
+            requestPermissions(permissions: permissions, context: context, callback: callback)
+
+        case "remove":
+            guard let permissions = params["permissions"] as? [String: Any] else {
+                callback.error("Invalid permissions")
+                return
+            }
+            removePermissions(permissions: permissions, context: context, callback: callback)
+
+        default:
+            callback.error("Unknown permissions method: \(method)")
+        }
     }
 
-    private func handleWebNavigationAPI(_ message: WKScriptMessage) {
-        print("WebNavigation API called: \(message.body)")
-        sendResponse(to: message, data: ["success": true])
+    // MARK: - Stub API Handlers (implement as needed)
+
+    private func handleCookiesAPI(
+        method: String,
+        params: [String: Any],
+        context: ExtensionContext,
+        callback: APICallback
+    ) {
+        // TODO: Implement cookies API
+        callback.success(["message": "Cookies API not yet implemented"])
     }
 
-    private func handleDeclarativeNetRequestAPI(_ message: WKScriptMessage) {
-        print("DeclarativeNetRequest API called: \(message.body)")
-        sendResponse(to: message, data: ["success": true])
+    private func handleHistoryAPI(
+        method: String,
+        params: [String: Any],
+        context: ExtensionContext,
+        callback: APICallback
+    ) {
+        // TODO: Implement history API
+        callback.success(["message": "History API not yet implemented"])
     }
 
-    private func handleActionAPI(_ message: WKScriptMessage) {
-        print("Action API called: \(message.body)")
-        sendResponse(to: message, data: ["success": true])
+    private func handleBookmarksAPI(
+        method: String,
+        params: [String: Any],
+        context: ExtensionContext,
+        callback: APICallback
+    ) {
+        // TODO: Implement bookmarks API
+        callback.success(["message": "Bookmarks API not yet implemented"])
     }
 
-    private func handleScriptingAPI(_ message: WKScriptMessage) {
-        print("Scripting API called: \(message.body)")
-        sendResponse(to: message, data: ["success": true])
+    private func handleWebNavigationAPI(
+        method: String,
+        params: [String: Any],
+        context: ExtensionContext,
+        callback: APICallback
+    ) {
+        // TODO: Implement web navigation API
+        callback.success(["message": "WebNavigation API not yet implemented"])
     }
 
-    private func handlePermissionsAPI(_ message: WKScriptMessage) {
-        print("Permissions API called: \(message.body)")
-        sendResponse(to: message, data: ["success": true])
+    private func handleDeclarativeNetRequestAPI(
+        method: String,
+        params: [String: Any],
+        context: ExtensionContext,
+        callback: APICallback
+    ) {
+        // TODO: Implement declarative net request API
+        callback.success(["message": "DeclarativeNetRequest API not yet implemented"])
     }
 
-    private func handleAltoExtensionsAPI(_ message: WKScriptMessage) {
-        // Handle Alto-specific extension communications
-        print("Alto Extensions API called: \(message.body)")
+    private func handleI18nAPI(
+        method: String,
+        params: [String: Any],
+        context: ExtensionContext,
+        callback: APICallback
+    ) {
+        switch method {
+        case "getMessage":
+            guard let messageName = params["messageName"] as? String else {
+                callback.error("Invalid messageName")
+                return
+            }
+            let substitutions = params["substitutions"]
+            let message = getI18nMessage(messageName: messageName, substitutions: substitutions)
+            callback.success(["message": message])
+
+        case "getUILanguage":
+            callback.success(["language": Locale.current.languageCode ?? "en"])
+
+        default:
+            callback.error("Unknown i18n method: \(method)")
+        }
     }
 
-    // MARK: - Specific API Implementations
+    // MARK: - API Implementation Methods
 
-    private func handleTabsQuery(_ message: WKScriptMessage, _ body: [String: Any]) {
-        let queryInfo = body["queryInfo"] as? [String: Any] ?? [:]
-
-        // Create realistic tab data based on current webviews
+    private func queryTabs(queryInfo: [String: Any]) -> [[String: Any]] {
         var tabs: [[String: Any]] = []
 
-        for (index, webView) in webViews.enumerated() {
+        for (index, webView) in activeWebViews.enumerated() {
+            guard let tabId = webViewToTabId[webView] else { continue }
+
             let tab: [String: Any] = [
-                "id": index + 1,
+                "id": tabId,
                 "index": index,
                 "windowId": 1,
                 "highlighted": index == 0,
@@ -328,65 +663,40 @@ class WebExtensionsAPIBridge: NSObject, WKScriptMessageHandler {
                 "width": Int(webView.frame.width),
                 "height": Int(webView.frame.height)
             ]
-            tabs.append(tab)
-        }
 
-        // If no webviews, provide a mock tab
-        if tabs.isEmpty {
-            let mockTab: [String: Any] = [
-                "id": 1,
-                "index": 0,
-                "windowId": 1,
-                "highlighted": true,
-                "active": true,
-                "pinned": false,
-                "audible": false,
-                "discarded": false,
-                "autoDiscardable": true,
-                "mutedInfo": ["muted": false],
-                "url": "https://example.com",
-                "title": "Example Page",
-                "favIconUrl": "",
-                "status": "complete",
-                "incognito": false,
-                "width": 1200,
-                "height": 800
-            ]
-            tabs.append(mockTab)
-        }
+            // Apply filters
+            var matches = true
 
-        // Filter tabs based on query
-        let filteredTabs = tabs.filter { tab in
             if let active = queryInfo["active"] as? Bool {
-                if (tab["active"] as? Bool) != active { return false }
+                if (tab["active"] as? Bool) != active {
+                    matches = false
+                }
             }
-            if let currentWindow = queryInfo["currentWindow"] as? Bool, currentWindow {
-                // Assume all tabs are in current window for now
-            }
+
             if let url = queryInfo["url"] as? String {
-                if (tab["url"] as? String) != url { return false }
+                if (tab["url"] as? String) != url {
+                    matches = false
+                }
             }
-            return true
+
+            if matches {
+                tabs.append(tab)
+            }
         }
 
-        sendResponse(to: message, data: filteredTabs)
+        return tabs
     }
 
-    private func handleTabsCreate(_ message: WKScriptMessage, _ body: [String: Any]) {
-        guard let createProperties = body["createProperties"] as? [String: Any] else {
-            sendErrorResponse(to: message, error: "Invalid createProperties")
-            return
-        }
+    private func createTab(properties: [String: Any], callback: APICallback) {
+        let url = properties["url"] as? String ?? "about:blank"
+        let active = properties["active"] as? Bool ?? true
 
-        let url = createProperties["url"] as? String ?? "about:blank"
-        let active = createProperties["active"] as? Bool ?? true
-
-        // TODO: Integrate with Alto's tab manager
-        print("Extension requested new tab with URL: \(url), active: \(active)")
+        // TODO: Integrate with Alto's tab manager to actually create a tab
+        logger.info("Extension requested new tab: \(url), active: \(active)")
 
         let newTab: [String: Any] = [
-            "id": webViews.count + 1,
-            "index": webViews.count,
+            "id": tabIdCounter,
+            "index": activeWebViews.count,
             "windowId": 1,
             "highlighted": active,
             "active": active,
@@ -396,474 +706,378 @@ class WebExtensionsAPIBridge: NSObject, WKScriptMessageHandler {
             "status": "loading"
         ]
 
-        sendResponse(to: message, data: newTab)
+        tabIdCounter += 1
+        callback.success(newTab)
     }
 
-    private func handleTabsUpdate(_ message: WKScriptMessage, _ body: [String: Any]) {
-        guard let tabId = body["tabId"] as? Int,
-              let updateProperties = body["updateProperties"] as? [String: Any] else {
-            sendErrorResponse(to: message, error: "Invalid parameters")
+    private func updateTab(tabId: Int, properties: [String: Any], callback: APICallback) {
+        guard let webView = tabIdToWebView[tabId] else {
+            callback.error("Tab not found")
             return
         }
 
-        // TODO: Update actual tab properties
-        if let url = updateProperties["url"] as? String {
-            print("Extension requested tab \(tabId) navigate to: \(url)")
+        if let url = properties["url"] as? String,
+           let targetURL = URL(string: url) {
+            let request = URLRequest(url: targetURL)
+            webView.load(request)
+            logger.info("Updated tab \(tabId) to URL: \(url)")
         }
 
-        sendResponse(to: message, data: ["success": true])
+        callback.success(["success": true])
     }
 
-    private func handleTabsRemove(_ message: WKScriptMessage, _ body: [String: Any]) {
-        guard let tabIds = body["tabIds"] else {
-            sendErrorResponse(to: message, error: "Invalid tabIds")
+    private func removeTabs(tabIds: [Int], callback: APICallback) {
+        // TODO: Integrate with Alto's tab manager to actually close tabs
+        logger.info("Extension requested to close tabs: \(tabIds)")
+        callback.success(["success": true])
+    }
+
+    private func getTab(tabId: Int, callback: APICallback) {
+        guard let webView = tabIdToWebView[tabId] else {
+            callback.error("Tab not found")
             return
         }
 
-        print("Extension requested to close tabs: \(tabIds)")
-        sendResponse(to: message, data: ["success": true])
-    }
-
-    private func handleTabsGet(_ message: WKScriptMessage, _ body: [String: Any]) {
-        guard let tabId = body["tabId"] as? Int else {
-            sendErrorResponse(to: message, error: "Invalid tabId")
-            return
-        }
-
-        // Return mock tab data for the requested ID
         let tab: [String: Any] = [
             "id": tabId,
             "index": 0,
             "windowId": 1,
             "active": true,
-            "url": "https://example.com",
-            "title": "Example Page",
+            "url": webView.url?.absoluteString ?? "about:blank",
+            "title": webView.title ?? "Tab",
             "status": "complete"
         ]
 
-        sendResponse(to: message, data: tab)
+        callback.success(tab)
     }
 
-    private func handleTabsExecuteScript(_ message: WKScriptMessage, _ body: [String: Any]) {
-        guard let details = body["details"] as? [String: Any] else {
-            sendErrorResponse(to: message, error: "Invalid script details")
-            return
+    private func executeScript(tabId: Int?, details: [String: Any], context: ExtensionContext, callback: APICallback) {
+        let targetWebView: WKWebView
+
+        if let tabId {
+            guard let webView = tabIdToWebView[tabId] else {
+                callback.error("Tab not found")
+                return
+            }
+            targetWebView = webView
+        } else {
+            targetWebView = context.webView
         }
 
         if let code = details["code"] as? String {
-            message.webView?.evaluateJavaScript(code) { result, error in
+            targetWebView.evaluateJavaScript(code) { result, error in
                 if let error {
-                    self.sendErrorResponse(to: message, error: error.localizedDescription)
+                    callback.error(error.localizedDescription)
                 } else {
-                    self.sendResponse(to: message, data: [result ?? NSNull()])
+                    callback.success([result ?? NSNull()])
+                }
+            }
+        } else if let file = details["file"] as? String {
+            // TODO: Load and execute script file
+            callback.error("Script file execution not yet implemented")
+        } else {
+            callback.error("No code or file specified")
+        }
+    }
+
+    private func insertCSS(tabId: Int?, details: [String: Any], callback: APICallback) {
+        let targetWebView: WKWebView
+
+        if let tabId {
+            guard let webView = tabIdToWebView[tabId] else {
+                callback.error("Tab not found")
+                return
+            }
+            targetWebView = webView
+        } else {
+            callback.error("No target webview")
+            return
+        }
+
+        if let css = details["css"] as? String {
+            let script = """
+                (function() {
+                    var style = document.createElement('style');
+                    style.textContent = `\(css.replacingOccurrences(of: "`", with: "\\`"))`;
+                    document.head.appendChild(style);
+                })();
+            """
+
+            targetWebView.evaluateJavaScript(script) { _, error in
+                if let error {
+                    callback.error(error.localizedDescription)
+                } else {
+                    callback.success(["success": true])
                 }
             }
         } else {
-            sendErrorResponse(to: message, error: "No code provided")
+            callback.error("No CSS specified")
         }
     }
 
-    private func handleTabsInsertCSS(_ message: WKScriptMessage, _ body: [String: Any]) {
-        guard let details = body["details"] as? [String: Any],
-              let css = details["css"] as? String else {
-            sendErrorResponse(to: message, error: "Invalid CSS details")
-            return
-        }
-
-        let script = """
-        (function() {
-            var style = document.createElement('style');
-            style.textContent = `\(css)`;
-            document.head.appendChild(style);
-        })();
-        """
-
-        message.webView?.evaluateJavaScript(script) { _, error in
-            if let error {
-                self.sendErrorResponse(to: message, error: error.localizedDescription)
-            } else {
-                self.sendResponse(to: message, data: ["success": true])
-            }
-        }
+    private func sendMessageToTab(tabId: Int, message: Any, callback: APICallback) {
+        // TODO: Implement inter-tab messaging
+//        logger.info("Message to tab \(tabId): \(message)")
+        callback.success(["success": true])
     }
 
-    private func handleTabsRemoveCSS(_ message: WKScriptMessage, _ body: [String: Any]) {
-        // TODO: Implement CSS removal
-        sendResponse(to: message, data: ["success": true])
-    }
-
-    private func handleTabsSendMessage(_ message: WKScriptMessage, _ body: [String: Any]) {
-        // TODO: Implement tab messaging
-        sendResponse(to: message, data: ["success": true])
-    }
-
-    private func handleTabsReload(_ message: WKScriptMessage, _ body: [String: Any]) {
-        if let tabId = body["tabId"] as? Int {
-            // TODO: Reload specific tab
-            print("Extension requested reload of tab: \(tabId)")
+    private func reloadTab(tabId: Int?, properties: [String: Any], callback: APICallback) {
+        if let tabId,
+           let webView = tabIdToWebView[tabId] {
+            webView.reload()
+            logger.info("Reloaded tab \(tabId)")
         }
-        sendResponse(to: message, data: ["success": true])
+        callback.success(["success": true])
     }
 
-    private func handleRuntimeSendMessage(_ message: WKScriptMessage, _ body: [String: Any]) {
-        guard let params = body["params"] as? [String: Any],
-              let messageData = params["message"] as? [String: Any] else {
-            sendErrorResponse(to: message, error: "Invalid message format")
-            return
-        }
-
-        // Enhanced message handling for popular extensions
-        if let topic = messageData["topic"] as? String {
-            switch topic {
-            case "popup:get-data":
-                let responseData: [String: Any] = [
-                    "data": [
-                        "amountInjected": 42,
-                        "blocked": 15,
-                        "status": "enabled",
-                        "isExtensionEnabled": true
-                    ],
-                    "success": true
-                ]
-                sendResponse(to: message, data: responseData)
-                return
-
-            case "domain:fetch-is-allowlisted":
-                sendResponse(to: message, data: ["value": false])
-                return
-
-            case "domain:fetch-is-manipulateDOM":
-                sendResponse(to: message, data: ["value": true])
-                return
-
-            case "tab:fetch-injections":
-                let injectionData: [String: Any] = [
-                    "value": [
-                        "blockedCounter": 15,
-                        "injectedCounter": 42,
-                        "domain": message.webView?.url?.host ?? "example.com",
-                        "tab": ["id": 1, "url": message.webView?.url?.absoluteString ?? "https://example.com"]
+    private func sendRuntimeMessage(message: Any, context: ExtensionContext, callback: APICallback) {
+        // Handle extension-specific messages
+        if let messageDict = message as? [String: Any] {
+            // Handle uBlock Origin specific messages
+            if let what = messageDict["what"] as? String {
+                switch what {
+                case "getPopupData":
+                    let popupData: [String: Any] = [
+                        "tabId": context.tabId,
+                        "tabURL": context.webView.url?.absoluteString ?? "about:blank",
+                        "tabHostname": context.webView.url?.host ?? "localhost",
+                        "tabTitle": context.webView.title ?? "Page",
+                        "globalBlockedRequestCount": 1234,
+                        "pageBlockedRequestCount": 15,
+                        "globalAllowedRequestCount": 5678,
+                        "pageAllowedRequestCount": 42,
+                        "netFilteringSwitch": true,
+                        "cosmeticFilteringSwitch": true,
+                        "firewallPaneMinimized": true,
+                        "popupBlockedCount": 15,
+                        "advancedUserEnabled": false
                     ]
-                ]
-                sendResponse(to: message, data: injectionData)
-                return
+                    callback.success(popupData)
+                    return
 
-            default:
-                break
-            }
-        }
+                case "getScriptlets":
+                    callback.success([])
+                    return
 
-        // Handle uBlock Origin specific messages
-        if let what = messageData["what"] as? String {
-            switch what {
-            case "getPopupData":
-                let popupData: [String: Any] = [
-                    "tabId": 1,
-                    "tabURL": message.webView?.url?.absoluteString ?? "https://example.com",
-                    "tabHostname": message.webView?.url?.host ?? "example.com",
-                    "tabTitle": message.webView?.title ?? "Page",
-                    "globalBlockedRequestCount": 1234,
-                    "pageBlockedRequestCount": 15,
-                    "globalAllowedRequestCount": 5678,
-                    "pageAllowedRequestCount": 42,
-                    "netFilteringSwitch": true,
-                    "cosmeticFilteringSwitch": true,
-                    "firewallPaneMinimized": true,
-                    "popupBlockedCount": 15,
-                    "advancedUserEnabled": false
-                ]
-                sendResponse(to: message, data: popupData)
-                return
-
-            case "getScriptlets":
-                sendResponse(to: message, data: [])
-                return
-
-            default:
-                break
-            }
-        }
-
-        sendResponse(to: message, data: ["success": true, "response": "Message received"])
-    }
-
-    private func handleRuntimeGetManifest(_ message: WKScriptMessage, _ body: [String: Any]) {
-        // Try to get manifest from loaded extension
-        if let firstExtension = extensionManager.loadedExtensions.first?.value {
-            let manifest = firstExtension.manifest
-
-            var contentScriptsData: [[String: Any]] = []
-            if let contentScripts = manifest.contentScripts {
-                contentScriptsData = contentScripts.map { cs in
-                    var scriptData: [String: Any] = [:]
-                    scriptData["matches"] = cs.matches
-                    scriptData["js"] = cs.js ?? []
-                    scriptData["css"] = cs.css ?? []
-                    scriptData["run_at"] = cs.runAt ?? "document_idle"
-                    return scriptData
+                default:
+                    break
                 }
             }
 
-            var manifestData: [String: Any] = [:]
-            manifestData["name"] = manifest.name
-            manifestData["version"] = manifest.version
-            manifestData["manifest_version"] = manifest.manifestVersion
-            manifestData["description"] = manifest.description ?? ""
-            manifestData["permissions"] = manifest.permissions ?? []
-            manifestData["host_permissions"] = manifest.hostPermissions ?? []
-            manifestData["content_scripts"] = contentScriptsData
+            // Handle LocalCDN specific messages
+            if let topic = messageDict["topic"] as? String {
+                switch topic {
+                case "popup:get-data":
+                    let responseData: [String: Any] = [
+                        "data": [
+                            "amountInjected": 42,
+                            "blocked": 15,
+                            "status": "enabled",
+                            "isExtensionEnabled": true
+                        ],
+                        "success": true
+                    ]
+                    callback.success(responseData)
+                    return
 
-            // Cache manifest for synchronous access
-            let updateCacheScript = "window._altoManifestData = \(jsonStringify(manifestData));"
-            message.webView?.evaluateJavaScript(updateCacheScript, completionHandler: nil)
+                default:
+                    break
+                }
+            }
+        }
 
-            sendResponse(to: message, data: manifestData)
-        } else {
-            let fallbackData: [String: Any] = [
+        callback.success(["success": true, "response": "Message received"])
+    }
+
+    private func getManifest(context: ExtensionContext, callback: APICallback) {
+        guard let extensionId = context.extensionId,
+              let webExtension = extensionManager.getExtensionInfo(id: extensionId) else {
+            // Return fallback manifest
+            let fallback: [String: Any] = [
                 "manifest_version": 2,
                 "name": "Extension",
                 "version": "1.0.0"
             ]
-
-            let updateCacheScript = "window._altoManifestData = \(jsonStringify(fallbackData));"
-            message.webView?.evaluateJavaScript(updateCacheScript, completionHandler: nil)
-
-            sendResponse(to: message, data: fallbackData)
+            callback.success(fallback)
+            return
         }
+
+        let manifest = webExtension.manifest
+        var manifestData: [String: Any] = [
+            "manifest_version": manifest.manifestVersion,
+            "name": manifest.name,
+            "version": manifest.version,
+            "description": manifest.description ?? ""
+        ]
+
+        if let permissions = manifest.permissions {
+            manifestData["permissions"] = permissions
+        }
+
+        if let hostPermissions = manifest.hostPermissions {
+            manifestData["host_permissions"] = hostPermissions
+        }
+
+        if let contentScripts = manifest.contentScripts {
+            manifestData["content_scripts"] = contentScripts.map { cs in
+                var scriptData: [String: Any] = [
+                    "matches": cs.matches,
+                    "js": cs.js,
+                    "run_at": cs.runAt ?? "document_idle"
+                ]
+                if let css = cs.css {
+                    scriptData["css"] = css
+                }
+                return scriptData
+            }
+        }
+
+        callback.success(manifestData)
     }
 
-    private func handleRuntimeGetURL(_ message: WKScriptMessage, _ body: [String: Any]) {
-        let path = body["path"] as? String ?? ""
-        let url = "chrome-extension://alto-extension-id/\(path)"
-        sendResponse(to: message, data: ["url": url])
+    private func getExtensionURL(path: String, context: ExtensionContext) -> String {
+        "chrome-extension://\(context.extensionId ?? "unknown")/\(path)"
     }
 
-    private func handleRuntimeGetPlatformInfo(_ message: WKScriptMessage, _ body: [String: Any]) {
-        let platformInfo: [String: Any] = [
+    private func getPlatformInfo() -> [String: Any] {
+        [
             "os": "mac",
             "arch": "arm64",
             "nacl_arch": "arm"
         ]
-        sendResponse(to: message, data: platformInfo)
     }
 
-    private func handleRuntimeGetBrowserInfo(_ message: WKScriptMessage, _ body: [String: Any]) {
-        let browserInfo: [String: Any] = [
+    private func getBrowserInfo() -> [String: Any] {
+        [
             "name": "Alto",
             "vendor": "Alto",
             "version": "1.0.0",
             "buildID": "20250621"
         ]
-        sendResponse(to: message, data: browserInfo)
     }
 
-    private func handleRuntimeOpenOptionsPage(_ message: WKScriptMessage, _ body: [String: Any]) {
+    private func openOptionsPage(context: ExtensionContext, callback: APICallback) {
         // TODO: Open extension options page
-        print("Extension requested to open options page")
-        sendResponse(to: message, data: ["success": true])
+        logger.info("Extension requested to open options page")
+        callback.success(["success": true])
     }
 
-    private func handleRuntimeSetUninstallURL(_ message: WKScriptMessage, _ body: [String: Any]) {
-        if let url = body["url"] as? String {
-            print("Extension set uninstall URL: \(url)")
+    private func setUninstallURL(url: String?, context: ExtensionContext, callback: APICallback) {
+        if let url {
+            logger.info("Extension set uninstall URL: \(url)")
         }
-        sendResponse(to: message, data: ["success": true])
+        callback.success(["success": true])
     }
 
-    private func handleRuntimeReload(_ message: WKScriptMessage, _ body: [String: Any]) {
-        print("Extension requested reload")
-        sendResponse(to: message, data: ["success": true])
-    }
-
-    private func handleStorageGet(_ message: WKScriptMessage, _ body: [String: Any]) {
-        guard let area = body["area"] as? String else {
-            sendErrorResponse(to: message, error: "Storage area not specified")
+    private func reloadExtension(context: ExtensionContext, callback: APICallback) {
+        guard let extensionId = context.extensionId else {
+            callback.error("No extension context")
             return
         }
 
-        let keys = body["keys"]
-        var result: [String: Any] = [:]
-
-        // Get from persistent storage
-        let storage = extensionStorage[area] ?? [:]
-
-        if let keyArray = keys as? [String] {
-            for key in keyArray {
-                if let value = storage[key] {
-                    result[key] = value
-                }
+        Task {
+            do {
+                try await extensionManager.reloadExtension(id: extensionId)
+                callback.success(["success": true])
+            } catch {
+                callback.error(error.localizedDescription)
             }
+        }
+    }
+
+    private func parseStorageKeys(_ keys: Any?) -> StorageKeys {
+        if keys == nil {
+            .all
         } else if let keyString = keys as? String {
-            if let value = storage[keyString] {
-                result[keyString] = value
-            }
-        } else if keys == nil {
-            // Get all keys
-            result = storage
+            .single(keyString)
+        } else if let keyArray = keys as? [String] {
+            .multiple(keyArray)
+        } else if let keyDict = keys as? [String: Any] {
+            .withDefaults(keyDict)
+        } else {
+            .all
         }
+    }
 
-        // Provide realistic defaults for common extension keys
-        if result.isEmpty {
-            if let keyArray = keys as? [String] {
-                for key in keyArray {
-                    switch key {
-                    case "deviceId":
-                        result[key] = "alto-browser-device-\(UUID().uuidString)"
-                    case "version":
-                        result[key] = "1.63.2"
-                    case "firstRun":
-                        result[key] = false
-                    case "userSettings":
-                        result[key] = [
-                            "advancedUserEnabled": false,
-                            "autoUpdate": true,
-                            "showIconBadge": true
-                        ]
-                    default:
-                        break
-                    }
-                }
+    // MARK: - Notification Setup
+
+    private func setupNotifications() {
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
+            if let error {
+                self.logger.error("Notification permission error: \(error.localizedDescription)")
+            } else {
+                self.logger.info("Notification permissions granted: \(granted)")
             }
         }
-
-        sendResponse(to: message, data: result)
     }
 
-    private func handleStorageSet(_ message: WKScriptMessage, _ body: [String: Any]) {
-        guard let area = body["area"] as? String,
-              let items = body["items"] as? [String: Any] else {
-            sendErrorResponse(to: message, error: "Invalid storage parameters")
-            return
-        }
+    // MARK: - Stub implementations for remaining methods
 
-        if extensionStorage[area] == nil {
-            extensionStorage[area] = [:]
-        }
-
-        for (key, value) in items {
-            extensionStorage[area]?[key] = value
-        }
-
-        // TODO: Persist to disk
-
-        sendResponse(to: message, data: ["success": true])
+    private func addWebRequestListener(eventType: String, context: ExtensionContext, callback: APICallback) {
+        logger.info("WebRequest listener added for: \(eventType)")
+        callback.success(["success": true])
     }
 
-    private func handleStorageRemove(_ message: WKScriptMessage, _ body: [String: Any]) {
-        guard let area = body["area"] as? String,
-              let keys = body["keys"] else {
-            sendErrorResponse(to: message, error: "Invalid storage parameters")
-            return
-        }
-
-        if let keyArray = keys as? [String] {
-            for key in keyArray {
-                extensionStorage[area]?.removeValue(forKey: key)
-            }
-        } else if let keyString = keys as? String {
-            extensionStorage[area]?.removeValue(forKey: keyString)
-        }
-
-        sendResponse(to: message, data: ["success": true])
+    private func removeWebRequestListener(eventType: String, context: ExtensionContext, callback: APICallback) {
+        logger.info("WebRequest listener removed for: \(eventType)")
+        callback.success(["success": true])
     }
 
-    private func handleStorageClear(_ message: WKScriptMessage, _ body: [String: Any]) {
-        guard let area = body["area"] as? String else {
-            sendErrorResponse(to: message, error: "Storage area not specified")
-            return
-        }
-
-        extensionStorage[area] = [:]
-        sendResponse(to: message, data: ["success": true])
+    private func createContextMenu(properties: [String: Any], context: ExtensionContext, callback: APICallback) {
+        let menuId = properties["id"] as? String ?? UUID().uuidString
+        logger.info("Context menu created: \(menuId)")
+        callback.success(["menuItemId": menuId])
     }
 
-    private func handleStorageGetBytesInUse(_ message: WKScriptMessage, _ body: [String: Any]) {
-        // Mock implementation - return reasonable byte count
-        sendResponse(to: message, data: ["bytesInUse": 1024])
+    private func updateContextMenu(
+        id: String,
+        properties: [String: Any],
+        context: ExtensionContext,
+        callback: APICallback
+    ) {
+        callback.success(["success": true])
     }
 
-    private func handleWebRequestAddListener(_ message: WKScriptMessage, _ body: [String: Any]) {
-        guard let eventType = body["eventType"] as? String else { return }
-
-        print("WebRequest listener added for: \(eventType)")
-        // TODO: Implement actual web request interception
-        sendResponse(to: message, data: ["success": true])
+    private func removeContextMenu(id: String, context: ExtensionContext, callback: APICallback) {
+        callback.success(["success": true])
     }
 
-    private func handleWebRequestRemoveListener(_ message: WKScriptMessage, _ body: [String: Any]) {
-        guard let eventType = body["eventType"] as? String else { return }
-
-        print("WebRequest listener removed for: \(eventType)")
-        sendResponse(to: message, data: ["success": true])
+    private func removeAllContextMenus(context: ExtensionContext, callback: APICallback) {
+        callback.success(["success": true])
     }
 
-    private func handleContextMenusCreate(_ message: WKScriptMessage, _ body: [String: Any]) {
-        guard let createProperties = body["createProperties"] as? [String: Any] else {
-            sendErrorResponse(to: message, error: "Invalid createProperties")
-            return
-        }
-
-        let menuId = createProperties["id"] as? String ?? UUID().uuidString
-        print("Context menu created: \(menuId)")
-        sendResponse(to: message, data: ["menuItemId": menuId])
-    }
-
-    private func handleContextMenusUpdate(_ message: WKScriptMessage, _ body: [String: Any]) {
-        sendResponse(to: message, data: ["success": true])
-    }
-
-    private func handleContextMenusRemove(_ message: WKScriptMessage, _ body: [String: Any]) {
-        sendResponse(to: message, data: ["success": true])
-    }
-
-    private func handleContextMenusRemoveAll(_ message: WKScriptMessage, _ body: [String: Any]) {
-        sendResponse(to: message, data: ["success": true])
-    }
-
-    private func handleNotificationsCreate(_ message: WKScriptMessage, _ body: [String: Any]) {
-        guard let notificationId = body["notificationId"] as? String,
-              let options = body["options"] as? [String: Any] else {
-            sendErrorResponse(to: message, error: "Invalid notification parameters")
-            return
-        }
-
+    private func createNotification(id: String, options: [String: Any], callback: APICallback) {
         let title = options["title"] as? String ?? "Notification"
-        let notificationMessage = options["message"] as? String ?? "" // Changed variable name
+        let message = options["message"] as? String ?? ""
 
-        // Create system notification
         let content = UNMutableNotificationContent()
         content.title = title
-        content.body = notificationMessage // Use the renamed variable
+        content.body = message
         content.sound = UNNotificationSound.default
 
-        let request = UNNotificationRequest(identifier: notificationId, content: content, trigger: nil)
+        let request = UNNotificationRequest(identifier: id, content: content, trigger: nil)
 
         UNUserNotificationCenter.current().add(request) { error in
             DispatchQueue.main.async {
                 if let error {
-                    self.sendErrorResponse(to: message, error: error.localizedDescription)
+                    callback.error(error.localizedDescription)
                 } else {
-                    self.sendResponse(to: message, data: ["notificationId": notificationId])
+                    callback.success(["notificationId": id])
                 }
             }
         }
     }
 
-    private func handleNotificationsUpdate(_ message: WKScriptMessage, _ body: [String: Any]) {
-        sendResponse(to: message, data: ["success": true])
+    private func updateNotification(id: String, options: [String: Any], callback: APICallback) {
+        callback.success(["success": true])
     }
 
-    private func handleNotificationsClear(_ message: WKScriptMessage, _ body: [String: Any]) {
-        guard let notificationId = body["notificationId"] as? String else {
-            sendErrorResponse(to: message, error: "Invalid notificationId")
-            return
-        }
-
-        UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: [notificationId])
-        sendResponse(to: message, data: ["wasCleared": true])
+    private func clearNotification(id: String, callback: APICallback) {
+        UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: [id])
+        callback.success(["wasCleared": true])
     }
 
-    private func handleNotificationsGetAll(_ message: WKScriptMessage, _ body: [String: Any]) {
+    private func getAllNotifications(callback: APICallback) {
         UNUserNotificationCenter.current().getDeliveredNotifications { notifications in
             DispatchQueue.main.async {
                 let notificationData = notifications.reduce(into: [String: [String: Any]]()) { result, notification in
@@ -872,124 +1086,159 @@ class WebExtensionsAPIBridge: NSObject, WKScriptMessageHandler {
                         "message": notification.request.content.body
                     ]
                 }
-                self.sendResponse(to: message, data: notificationData)
+                callback.success(notificationData)
             }
         }
     }
 
-    // MARK: - Response Handling
-
-    private func sendResponse(to message: WKScriptMessage, data: Any) {
-        guard let body = message.body as? [String: Any],
-              let callbackId = body["callbackId"] as? String,
-              !callbackId.isEmpty else {
-            return
-        }
-
-        let script = """
-        if (typeof window.extensionAPICallbacks['\(callbackId)'] === 'function') {
-            try {
-                window.extensionAPICallbacks['\(callbackId)'](\(jsonStringify(data)));
-                delete window.extensionAPICallbacks['\(callbackId)'];
-            } catch (e) {
-                console.error('Callback error:', e);
-            }
-        }
-        """
-
-        message.webView?.evaluateJavaScript(script, completionHandler: nil)
+    private func setActionIcon(details: [String: Any], context: ExtensionContext, callback: APICallback) {
+        callback.success(["success": true])
     }
 
-    private func sendErrorResponse(to message: WKScriptMessage, error: String) {
-        guard let body = message.body as? [String: Any],
-              let callbackId = body["callbackId"] as? String else { return }
-
-        let script = """
-        if (typeof window.extensionAPICallbacks['\(callbackId)'] === 'function') {
-            try {
-                window.extensionAPICallbacks['\(callbackId)'](null, '\(error)');
-                delete window.extensionAPICallbacks['\(callbackId)'];
-            } catch (e) {
-                console.error('Error callback error:', e);
-            }
-        }
-        """
-
-        message.webView?.evaluateJavaScript(script, completionHandler: nil)
+    private func setActionTitle(details: [String: Any], context: ExtensionContext, callback: APICallback) {
+        callback.success(["success": true])
     }
 
-    private func jsonStringify(_ object: Any) -> String {
-        do {
-            let data = try JSONSerialization.data(withJSONObject: object, options: [])
-            return String(data: data, encoding: .utf8) ?? "null"
-        } catch {
-            return "null"
-        }
+    private func setActionBadgeText(details: [String: Any], context: ExtensionContext, callback: APICallback) {
+        callback.success(["success": true])
     }
 
-    // MARK: - API Generation
+    private func setActionBadgeBackgroundColor(
+        details: [String: Any],
+        context: ExtensionContext,
+        callback: APICallback
+    ) {
+        callback.success(["success": true])
+    }
 
-    func generateWebExtensionsAPI() -> String {
+    private func setActionPopup(details: [String: Any], context: ExtensionContext, callback: APICallback) {
+        callback.success(["success": true])
+    }
+
+    private func executeScriptV3(injection: [String: Any], context: ExtensionContext, callback: APICallback) {
+        // TODO: Implement manifest v3 scripting API
+        callback.success(["success": true])
+    }
+
+    private func insertCSSV3(injection: [String: Any], context: ExtensionContext, callback: APICallback) {
+        // TODO: Implement manifest v3 CSS injection
+        callback.success(["success": true])
+    }
+
+    private func removeCSSV3(injection: [String: Any], context: ExtensionContext, callback: APICallback) {
+        // TODO: Implement manifest v3 CSS removal
+        callback.success(["success": true])
+    }
+
+    private func checkPermissions(permissions: [String: Any], context: ExtensionContext) -> Bool {
+        // TODO: Implement permission checking
+        true
+    }
+
+    private func requestPermissions(permissions: [String: Any], context: ExtensionContext, callback: APICallback) {
+        // TODO: Implement permission requesting
+        callback.success(["result": true])
+    }
+
+    private func removePermissions(permissions: [String: Any], context: ExtensionContext, callback: APICallback) {
+        // TODO: Implement permission removal
+        callback.success(["result": true])
+    }
+
+    private func getI18nMessage(messageName: String, substitutions: Any?) -> String {
+        // Basic i18n implementation
+        let translations: [String: String] = [
+            "extensionName": "Extension",
+            "popupBlockedCount": "Blocked",
+            "popupTipDashboard": "Open the dashboard",
+            "popupTipZapper": "Enter element zapper mode",
+            "popupTipPicker": "Enter element picker mode",
+            "popupTipLog": "Open logger"
+        ]
+
+        return translations[messageName] ?? messageName
+    }
+
+    // MARK: - JavaScript API Bridge Injection
+
+    private func injectAPIBridge(into webView: WKWebView) {
+        let apiScript = WKUserScript(
+            source: generateAPIBridgeScript(),
+            injectionTime: .atDocumentStart,
+            forMainFrameOnly: false
+        )
+
+        webView.configuration.userContentController.addUserScript(apiScript)
+    }
+
+    public func generateAPIBridgeScript() -> String {
         """
-        // Enhanced WebExtensions API Bridge for Alto Browser
+        // Alto WebExtensions API Bridge
         (function() {
             'use strict';
 
-            // Global extension state
-            window.extensionAPICallbacks = window.extensionAPICallbacks || {};
-            window._altoExtensionState = {
-                callbackIdCounter: 0,
-                manifestData: null,
-                isReady: false
+            // Global state
+            window._altoExtensionAPI = {
+                callbackCounter: 0,
+                callbacks: {}
             };
 
             function generateCallbackId() {
-                return 'callback_' + (++window._altoExtensionState.callbackIdCounter);
+                return 'callback_' + (++window._altoExtensionAPI.callbackCounter);
             }
 
-            function makeAPICall(apiName, method, params, callback) {
+            function makeAPICall(api, method, params, callback) {
                 const callbackId = callback ? generateCallbackId() : null;
 
                 if (callback && callbackId) {
-                    window.extensionAPICallbacks[callbackId] = function(result, error) {
-                        try {
-                            if (error) {
-                                console.error('Extension API Error:', error);
-                                if (typeof callback === 'function') callback(null);
-                            } else {
-                                if (typeof callback === 'function') callback(result);
-                            }
-                        } catch (e) {
-                            console.error('Callback execution error:', e);
-                        }
-                    };
+                    window._altoExtensionAPI.callbacks[callbackId] = callback;
                 }
 
                 const message = {
+                    api: api,
                     method: method,
-                    params: params,
+                    params: params || {},
                     callbackId: callbackId
                 };
 
                 try {
-                    if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers[apiName]) {
-                        window.webkit.messageHandlers[apiName].postMessage(message);
+                    if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.altoExtensionAPI) {
+                        window.webkit.messageHandlers.altoExtensionAPI.postMessage(message);
                     } else {
-                        console.warn('API handler not available:', apiName);
+                        console.warn('Alto Extension API not available');
                         if (callback) {
                             setTimeout(() => callback(null), 0);
                         }
                     }
                 } catch (e) {
-                    console.error('Failed to call API:', apiName, e);
+                    console.error('Failed to call API:', api, method, e);
                     if (callback) {
                         setTimeout(() => callback(null), 0);
                     }
                 }
             }
 
-            // Enhanced Chrome API
+            // Response handler
+            window._altoHandleAPIResponse = function(callbackId, result, error) {
+                const callback = window._altoExtensionAPI.callbacks[callbackId];
+                if (callback) {
+                    delete window._altoExtensionAPI.callbacks[callbackId];
+                    try {
+                        if (error) {
+                            console.error('API Error:', error);
+                            callback(null);
+                        } else {
+                            callback(result);
+                        }
+                    } catch (e) {
+                        console.error('Callback error:', e);
+                    }
+                }
+            };
+
+            // Chrome/Browser API Implementation
             window.chrome = window.chrome || {};
+            window.browser = window.browser || window.chrome;
 
             // Tabs API
             window.chrome.tabs = {
@@ -1024,14 +1273,6 @@ class WebExtensionsAPIBridge: NSObject, WKScriptMessageHandler {
                     }
                     makeAPICall('chrome.tabs', 'insertCSS', {tabId, details}, callback);
                 },
-                removeCSS: function(tabId, details, callback) {
-                    if (typeof tabId === 'object') {
-                        callback = details;
-                        details = tabId;
-                        tabId = null;
-                    }
-                    makeAPICall('chrome.tabs', 'removeCSS', {tabId, details}, callback);
-                },
                 sendMessage: function(tabId, message, options, callback) {
                     if (typeof options === 'function') {
                         callback = options;
@@ -1052,36 +1293,12 @@ class WebExtensionsAPIBridge: NSObject, WKScriptMessageHandler {
                     makeAPICall('chrome.tabs', 'reload', {tabId, reloadProperties}, callback);
                 },
                 onUpdated: {
-                    addListener: function(callback) {
-                        console.log('Added tabs.onUpdated listener');
-                    },
-                    removeListener: function(callback) {
-                        console.log('Removed tabs.onUpdated listener');
-                    }
+                    addListener: function(callback) { /* TODO */ },
+                    removeListener: function(callback) { /* TODO */ }
                 },
                 onActivated: {
-                    addListener: function(callback) {
-                        console.log('Added tabs.onActivated listener');
-                    },
-                    removeListener: function(callback) {
-                        console.log('Removed tabs.onActivated listener');
-                    }
-                },
-                onCreated: {
-                    addListener: function(callback) {
-                        console.log('Added tabs.onCreated listener');
-                    },
-                    removeListener: function(callback) {
-                        console.log('Removed tabs.onCreated listener');
-                    }
-                },
-                onRemoved: {
-                    addListener: function(callback) {
-                        console.log('Added tabs.onRemoved listener');
-                    },
-                    removeListener: function(callback) {
-                        console.log('Removed tabs.onRemoved listener');
-                    }
+                    addListener: function(callback) { /* TODO */ },
+                    removeListener: function(callback) { /* TODO */ }
                 }
             };
 
@@ -1095,15 +1312,15 @@ class WebExtensionsAPIBridge: NSObject, WKScriptMessageHandler {
                     makeAPICall('chrome.runtime', 'sendMessage', {message, options}, callback);
                 },
                 getManifest: function() {
-                    // Synchronous call - return cached data immediately
-                    return window._altoExtensionState.manifestData || {
+                    // Synchronous call - cached data
+                    return window._altoManifestCache || {
                         manifest_version: 2,
                         name: 'Extension',
                         version: '1.0.0'
                     };
                 },
                 getURL: function(path) {
-                    return 'chrome-extension://alto-extension-id/' + path;
+                    return 'chrome-extension://alto-extension/' + path;
                 },
                 getPlatformInfo: function(callback) {
                     makeAPICall('chrome.runtime', 'getPlatformInfo', {}, callback);
@@ -1120,20 +1337,14 @@ class WebExtensionsAPIBridge: NSObject, WKScriptMessageHandler {
                 reload: function() {
                     makeAPICall('chrome.runtime', 'reload', {});
                 },
-                id: 'alto-extension-id',
+                id: 'alto-extension',
                 lastError: undefined,
                 onMessage: {
-                    addListener: function(callback) {
-                        console.log('Added runtime.onMessage listener');
-                    },
-                    removeListener: function(callback) {
-                        console.log('Removed runtime.onMessage listener');
-                    }
+                    addListener: function(callback) { /* TODO */ },
+                    removeListener: function(callback) { /* TODO */ }
                 },
                 onInstalled: {
                     addListener: function(callback) {
-                        console.log('Added runtime.onInstalled listener');
-                        // Trigger immediately
                         setTimeout(() => {
                             try {
                                 callback({reason: 'install'});
@@ -1142,102 +1353,23 @@ class WebExtensionsAPIBridge: NSObject, WKScriptMessageHandler {
                             }
                         }, 100);
                     },
-                    removeListener: function(callback) {
-                        console.log('Removed runtime.onInstalled listener');
-                    }
-                },
-                onStartup: {
-                    addListener: function(callback) {
-                        console.log('Added runtime.onStartup listener');
-                    },
-                    removeListener: function(callback) {
-                        console.log('Removed runtime.onStartup listener');
-                    }
+                    removeListener: function(callback) { /* TODO */ }
                 }
             };
 
-            // Enhanced Storage API with better fallbacks
+            // Storage API
             window.chrome.storage = {
                 local: {
                     get: function(keys, callback) {
-                        // Immediate localStorage fallback
-                        let fallbackResult = {};
-                        try {
-                            if (typeof keys === 'string') {
-                                const value = localStorage.getItem('alto_ext_' + keys);
-                                if (value !== null) {
-                                    fallbackResult[keys] = JSON.parse(value);
-                                }
-                            } else if (Array.isArray(keys)) {
-                                keys.forEach(key => {
-                                    const value = localStorage.getItem('alto_ext_' + key);
-                                    if (value !== null) {
-                                        fallbackResult[key] = JSON.parse(value);
-                                    }
-                                });
-                            } else if (typeof keys === 'object' && keys !== null) {
-                                Object.keys(keys).forEach(key => {
-                                    const value = localStorage.getItem('alto_ext_' + key);
-                                    fallbackResult[key] = value !== null ? JSON.parse(value) : keys[key];
-                                });
-                            } else if (keys == null) {
-                                // Get all extension keys
-                                Object.keys(localStorage).forEach(key => {
-                                    if (key.startsWith('alto_ext_')) {
-                                        const cleanKey = key.replace('alto_ext_', '');
-                                        fallbackResult[cleanKey] = JSON.parse(localStorage.getItem(key));
-                                    }
-                                });
-                            }
-                        } catch (e) {
-                            console.error('Storage fallback error:', e);
-                        }
-
-                        // Call native API but use fallback immediately
-                        if (callback) {
-                            setTimeout(() => callback(fallbackResult), 0);
-                        }
-
-                        makeAPICall('chrome.storage', 'get', {keys, area: 'local'}, function(nativeResult) {
-                            // Native result would override if different, but we already called callback
-                        });
+                        makeAPICall('chrome.storage', 'get', {keys, area: 'local'}, callback);
                     },
                     set: function(items, callback) {
-                        // Store in localStorage immediately
-                        try {
-                            Object.keys(items).forEach(key => {
-                                localStorage.setItem('alto_ext_' + key, JSON.stringify(items[key]));
-                            });
-                        } catch (e) {
-                            console.error('Storage set fallback error:', e);
-                        }
-
                         makeAPICall('chrome.storage', 'set', {items, area: 'local'}, callback);
                     },
                     remove: function(keys, callback) {
-                        try {
-                            if (typeof keys === 'string') {
-                                localStorage.removeItem('alto_ext_' + keys);
-                            } else if (Array.isArray(keys)) {
-                                keys.forEach(key => localStorage.removeItem('alto_ext_' + key));
-                            }
-                        } catch (e) {
-                            console.error('Storage remove fallback error:', e);
-                        }
-
                         makeAPICall('chrome.storage', 'remove', {keys, area: 'local'}, callback);
                     },
                     clear: function(callback) {
-                        try {
-                            Object.keys(localStorage).forEach(key => {
-                                if (key.startsWith('alto_ext_')) {
-                                    localStorage.removeItem(key);
-                                }
-                            });
-                        } catch (e) {
-                            console.error('Storage clear fallback error:', e);
-                        }
-
                         makeAPICall('chrome.storage', 'clear', {area: 'local'}, callback);
                     },
                     getBytesInUse: function(keys, callback) {
@@ -1246,19 +1378,19 @@ class WebExtensionsAPIBridge: NSObject, WKScriptMessageHandler {
                 },
                 sync: {
                     get: function(keys, callback) {
-                        return window.chrome.storage.local.get(keys, callback);
+                        makeAPICall('chrome.storage', 'get', {keys, area: 'sync'}, callback);
                     },
                     set: function(items, callback) {
-                        return window.chrome.storage.local.set(items, callback);
+                        makeAPICall('chrome.storage', 'set', {items, area: 'sync'}, callback);
                     },
                     remove: function(keys, callback) {
-                        return window.chrome.storage.local.remove(keys, callback);
+                        makeAPICall('chrome.storage', 'remove', {keys, area: 'sync'}, callback);
                     },
                     clear: function(callback) {
-                        return window.chrome.storage.local.clear(callback);
+                        makeAPICall('chrome.storage', 'clear', {area: 'sync'}, callback);
                     },
                     getBytesInUse: function(keys, callback) {
-                        return window.chrome.storage.local.getBytesInUse(keys, callback);
+                        makeAPICall('chrome.storage', 'getBytesInUse', {keys, area: 'sync'}, callback);
                     }
                 }
             };
@@ -1290,34 +1422,6 @@ class WebExtensionsAPIBridge: NSObject, WKScriptMessageHandler {
                     removeListener: function(callback) {
                         makeAPICall('chrome.webRequest', 'removeListener', {
                             eventType: 'onBeforeSendHeaders'
-                        });
-                    }
-                },
-                onHeadersReceived: {
-                    addListener: function(callback, filter, extraInfoSpec) {
-                        makeAPICall('chrome.webRequest', 'addListener', {
-                            eventType: 'onHeadersReceived',
-                            filter: filter,
-                            extraInfoSpec: extraInfoSpec
-                        });
-                    },
-                    removeListener: function(callback) {
-                        makeAPICall('chrome.webRequest', 'removeListener', {
-                            eventType: 'onHeadersReceived'
-                        });
-                    }
-                },
-                onResponseStarted: {
-                    addListener: function(callback, filter, extraInfoSpec) {
-                        makeAPICall('chrome.webRequest', 'addListener', {
-                            eventType: 'onResponseStarted',
-                            filter: filter,
-                            extraInfoSpec: extraInfoSpec
-                        });
-                    },
-                    removeListener: function(callback) {
-                        makeAPICall('chrome.webRequest', 'removeListener', {
-                            eventType: 'onResponseStarted'
                         });
                     }
                 }
@@ -1360,74 +1464,43 @@ class WebExtensionsAPIBridge: NSObject, WKScriptMessageHandler {
                 }
             };
 
-            // i18n API with comprehensive translations
+            // Action API (for both action and browserAction)
+            const actionAPI = {
+                setIcon: function(details, callback) {
+                    makeAPICall('chrome.action', 'setIcon', {details}, callback);
+                },
+                setTitle: function(details, callback) {
+                    makeAPICall('chrome.action', 'setTitle', {details}, callback);
+                },
+                setBadgeText: function(details, callback) {
+                    makeAPICall('chrome.action', 'setBadgeText', {details}, callback);
+                },
+                setBadgeBackgroundColor: function(details, callback) {
+                    makeAPICall('chrome.action', 'setBadgeBackgroundColor', {details}, callback);
+                },
+                setPopup: function(details, callback) {
+                    makeAPICall('chrome.action', 'setPopup', {details}, callback);
+                }
+            };
+
+            window.chrome.action = actionAPI;
+            window.chrome.browserAction = actionAPI;
+
+            // i18n API
             window.chrome.i18n = {
                 getMessage: function(messageName, substitutions) {
+                    // Synchronous call with fallback
                     const translations = {
-                        // Common extension strings
                         'extensionName': 'Extension',
-                        'extensionDescription': 'Browser Extension',
-                        'enabled': 'Enabled',
-                        'disabled': 'Disabled',
-                        'enable': 'Enable',
-                        'disable': 'Disable',
-                        'settings': 'Settings',
-                        'options': 'Options',
-                        'preferences': 'Preferences',
-                        'about': 'About',
-                        'help': 'Help',
-                        'version': 'Version',
-                        'ok': 'OK',
-                        'cancel': 'Cancel',
-                        'save': 'Save',
-                        'reset': 'Reset',
-                        'close': 'Close',
-                        'open': 'Open',
-                        'yes': 'Yes',
-                        'no': 'No',
-                        'on': 'On',
-                        'off': 'Off',
-
-                        // uBlock Origin specific
                         'popupBlockedCount': 'Blocked',
-                        'popupBlockedOnThisPage': 'on this page',
-                        'popupBlockedSinceInstall': 'since install',
                         'popupTipDashboard': 'Open the dashboard',
                         'popupTipZapper': 'Enter element zapper mode',
                         'popupTipPicker': 'Enter element picker mode',
-                        'popupTipLog': 'Open logger',
-                        'popupOr': 'or',
-
-                        // LocalCDN specific
-                        'amountInjectedDescription': 'Injected',
-                        'requests': 'Requests',
-                        'optionsTitle': 'Options',
-                        'statisticsTitle': 'Statistics',
-                        'toggle': 'Toggle',
-                        'showExtensionIconBadgeTitle': 'Show badge',
-                        'showExtensionIconBadgeDescription': 'Show number of injected resources as badge text',
-
-                        // AdBlock specific
-                        'adblock_paused': 'AdBlock is paused',
-                        'adblock_enabled': 'AdBlock is enabled',
-                        'pause_adblock': 'Pause AdBlock',
-                        'unpause_adblock': 'Unpause AdBlock',
-                        'options_page': 'Options',
-                        'block_ads': 'Block ads',
-                        'allow_ads': 'Allow ads',
-
-                        // Privacy Badger specific
-                        'popup_blocked': 'Blocked',
-                        'popup_cookieblocked': 'Cookie blocked',
-                        'popup_noaction': 'Allowed',
-                        'badger_status_block': 'Block',
-                        'badger_status_cookieblock': 'Block cookies',
-                        'badger_status_allow': 'Allow'
+                        'popupTipLog': 'Open logger'
                     };
 
                     let result = translations[messageName] || messageName || '';
 
-                    // Handle substitutions
                     if (substitutions) {
                         if (Array.isArray(substitutions)) {
                             substitutions.forEach((sub, index) => {
@@ -1442,23 +1515,20 @@ class WebExtensionsAPIBridge: NSObject, WKScriptMessageHandler {
                 },
                 getUILanguage: function() {
                     return navigator.language || 'en';
-                },
-                detectLanguage: function(text, callback) {
-                    if (callback) {
-                        setTimeout(() => callback({
-                            isReliable: false,
-                            languages: [{language: 'en', percentage: 100}]
-                        }), 0);
-                    }
                 }
             };
 
-            // Additional APIs for better compatibility
-            window.chrome.webNavigation = {
-                onBeforeNavigate: { addListener: function() {}, removeListener: function() {} },
-                onCommitted: { addListener: function() {}, removeListener: function() {} },
-                onCompleted: { addListener: function() {}, removeListener: function() {} },
-                onErrorOccurred: { addListener: function() {}, removeListener: function() {} }
+            // Additional stub APIs
+            window.chrome.permissions = {
+                contains: function(permissions, callback) {
+                    makeAPICall('chrome.permissions', 'contains', {permissions}, callback);
+                },
+                request: function(permissions, callback) {
+                    makeAPICall('chrome.permissions', 'request', {permissions}, callback);
+                },
+                remove: function(permissions, callback) {
+                    makeAPICall('chrome.permissions', 'remove', {permissions}, callback);
+                }
             };
 
             window.chrome.cookies = {
@@ -1468,84 +1538,79 @@ class WebExtensionsAPIBridge: NSObject, WKScriptMessageHandler {
                 remove: function(details, callback) { if (callback) callback(null); }
             };
 
-            window.chrome.permissions = {
-                contains: function(permissions, callback) { if (callback) callback(true); },
-                request: function(permissions, callback) { if (callback) callback(true); },
-                remove: function(permissions, callback) { if (callback) callback(true); }
+            window.chrome.history = {
+                search: function(query, callback) { if (callback) callback([]); },
+                addUrl: function(details, callback) { if (callback) callback(); },
+                deleteUrl: function(details, callback) { if (callback) callback(); }
             };
 
-            window.chrome.action = window.chrome.browserAction = {
-                setIcon: function(details, callback) { if (callback) callback(); },
-                setTitle: function(details, callback) { if (callback) callback(); },
-                setBadgeText: function(details, callback) { if (callback) callback(); },
-                setBadgeBackgroundColor: function(details, callback) { if (callback) callback(); },
-                setPopup: function(details, callback) { if (callback) callback(); }
+            window.chrome.bookmarks = {
+                get: function(idOrIdList, callback) { if (callback) callback([]); },
+                getChildren: function(id, callback) { if (callback) callback([]); },
+                create: function(bookmark, callback) { if (callback) callback(null); },
+                remove: function(id, callback) { if (callback) callback(); }
             };
 
-            // Browser API alias
-            if (typeof window.browser === 'undefined') {
-                window.browser = window.chrome;
-            }
-
-            // Initialize manifest data
+            // Initialize manifest cache
             makeAPICall('chrome.runtime', 'getManifest', {}, function(manifest) {
                 if (manifest) {
-                    window._altoExtensionState.manifestData = manifest;
+                    window._altoManifestCache = manifest;
                 }
             });
 
-            // Mark as ready
-            window._altoExtensionState.isReady = true;
-
-            console.log('🚀 Alto WebExtensions API Bridge loaded and ready');
-
-            // Dispatch ready event
-            document.addEventListener('DOMContentLoaded', function() {
-                setTimeout(() => {
-                    const event = new CustomEvent('altoExtensionAPIReady', {
-                        detail: { bridge: window._altoExtensionState }
-                    });
-                    document.dispatchEvent(event);
-                }, 50);
-            });
+            console.log('🚀 Alto WebExtensions API Bridge loaded');
 
         })();
         """
     }
+}
 
-    func generateContentScriptSupport() -> String {
-        """
-        // Content Script Support for Alto Browser Extensions
-        (function() {
-            'use strict';
+// MARK: - ExtensionContext
 
-            // Ensure extension APIs are available in content scripts
-            if (typeof window.chrome === 'undefined') {
-                console.warn('Chrome APIs not available in content script context');
-                return;
+private struct ExtensionContext {
+    let extensionId: String?
+    let tabId: Int
+    let webView: WKWebView
+}
+
+// MARK: - EventListener
+
+private struct EventListener {
+    let id: String
+    let callback: (Any) -> ()
+    let context: ExtensionContext
+}
+
+// MARK: - APICallback
+
+private struct APICallback {
+    let id: String?
+    let webView: WKWebView
+
+    func success(_ data: Any?) {
+        guard let id else { return }
+
+        let script: String
+        if let data {
+            do {
+                let jsonData = try JSONSerialization.data(withJSONObject: data)
+                let jsonString = String(data: jsonData, encoding: .utf8) ?? "null"
+                script = "window._altoHandleAPIResponse('\(id)', \(jsonString), null);"
+            } catch {
+                script = "window._altoHandleAPIResponse('\(id)', null, 'JSON serialization error');"
             }
+        } else {
+            script = "window._altoHandleAPIResponse('\(id)', null, null);"
+        }
 
-            // Content script specific enhancements
-            if (window.chrome.runtime) {
-                // Override sendMessage for content script context
-                const originalSendMessage = window.chrome.runtime.sendMessage;
-                window.chrome.runtime.sendMessage = function(message, options, callback) {
-                    if (typeof options === 'function') {
-                        callback = options;
-                        options = {};
-                    }
+        webView.evaluateJavaScript(script, completionHandler: nil)
+    }
 
-                    console.log('Content script sending message:', message);
-                    return originalSendMessage.call(this, message, options, callback);
-                };
-            }
+    func error(_ message: String) {
+        guard let id else { return }
 
-            // Add content script identification
-            window._altoContentScript = true;
-
-            console.log('Alto content script support loaded');
-
-        })();
-        """
+        let escapedMessage = message.replacingOccurrences(of: "'", with: "\\'")
+        let script = "window._altoHandleAPIResponse('\(id)', null, '\(escapedMessage)');"
+        webView.evaluateJavaScript(script, completionHandler: nil)
     }
 }

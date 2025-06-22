@@ -366,198 +366,36 @@ struct ExtensionPopupView: View {
             config.defaultWebpagePreferences.allowsContentJavaScript = true
         }
 
-        setupWebExtensionsAPI(config: config)
-        addUserScripts(config: config)
+        let webView = WKWebView(frame: .zero, configuration: config)
 
-        return WKWebView(frame: .zero, configuration: config)
+        // Register the WebView with the bridge BEFORE setting up the API
+        WebExtensionsAPIBridge.shared.configureWebView(webView, for: webExtension.id)
+
+        return webView
     }
 
     private func setupWebExtensionsAPI(config: WKWebViewConfiguration) {
-        let bridge = WebExtensionsAPIBridge.shared
-        let handlers = [
-            "altoExtensions", "chrome.tabs", "chrome.runtime", "chrome.storage",
-            "chrome.webRequest", "chrome.contextMenus", "chrome.notifications",
-            "chrome.bookmarks", "chrome.history", "browser.tabs", "browser.runtime",
-            "browser.storage", "browser.webRequest", "browser.contextMenus",
-            "browser.notifications", "browser.bookmarks", "browser.history"
-        ]
-
-        for handler in handlers {
-            config.userContentController.add(bridge, name: handler)
-        }
-
-        logger.info("Added WebExtensions API bridge message handlers")
+        // The WebExtensionsAPIBridge.configureWebView() method now handles this
+        // So we can remove this method or just log
+        logger.info("WebExtensions API will be configured when WebView is registered")
     }
 
-    private func addUserScripts(config: WKWebViewConfiguration) {
-        let bridge = WebExtensionsAPIBridge.shared
+    // private func setupWebExtensionsAPI(config: WKWebViewConfiguration) {
+    //     let bridge = WebExtensionsAPIBridge.shared
+    //     let handlers = [
+    //         "altoExtensions", "chrome.tabs", "chrome.runtime", "chrome.storage",
+    //         "chrome.webRequest", "chrome.contextMenus", "chrome.notifications",
+    //         "chrome.bookmarks", "chrome.history", "browser.tabs", "browser.runtime",
+    //         "browser.storage", "browser.webRequest", "browser.contextMenus",
+    //         "browser.notifications", "browser.bookmarks", "browser.history"
+    //     ]
 
-        let apiScript = WKUserScript(
-            source: bridge.generateWebExtensionsAPI(),
-            injectionTime: .atDocumentStart,
-            forMainFrameOnly: false
-        )
-        config.userContentController.addUserScript(apiScript)
+    //     for handler in handlers {
+    //         config.userContentController.add(bridge, name: handler)
+    //     }
 
-        // FONTAWESOME ICON FIX
-        let fontAwesomeFixScript = WKUserScript(
-            source: """
-                (function() {
-                    console.log('🎨 Setting up FontAwesome icon fix...');
-
-                    window._altoModuleLoader = {
-                        processedModules: new Set(),
-                        moduleCache: new Map(),
-                        loadedResources: new Set()
-                    };
-
-                    // 1. FontAwesome icon replacement map
-                    const iconMap = {
-                        'film': '🎬',
-                        'oh-popups': '🚫',
-                        'eyeph-slash': '👁️',
-                        'headermode-text-size': '📝',
-                        'code': '💻',
-                        'list-alt': '📋',
-                        'cogs': '⚙️',
-                        'bolt': '⚡',
-                        'eye-dropper': '🎨',
-                        'commentlist-alt': '💬',
-                        'power-off': '⏻',
-                        'lock': '🔒',
-                        'unlock': '🔓',
-                        'refresh': '🔄',
-                        'eraser': '🧹',
-                        'dashboard': '📊',
-                        'logger': '📝'
-                    };
-
-                    // 2. Enhanced createElement override
-                    const originalCreateElement = document.createElement;
-                    document.createElement = function(tagName) {
-                        const element = originalCreateElement.call(this, tagName);
-
-                        if (tagName.toLowerCase() === 'script') {
-                            if (element.type === 'module') {
-                                element.type = 'text/javascript';
-                                console.log('🔄 Converted module script to regular script');
-                            }
-                        }
-
-                        return element;
-                    };
-
-                    // 3. Fix fetch for local resources
-                    const originalFetch = window.fetch;
-                    window.fetch = function(url, options) {
-                        console.log('🌐 Fetch request: ' + url);
-
-                        if (typeof url === 'string' && (url.startsWith('./') || url.startsWith('../') || !url.includes('://'))) {
-                            return new Promise((resolve, reject) => {
-                                const xhr = new XMLHttpRequest();
-                                xhr.open('GET', url, true);
-                                xhr.onload = function() {
-                                    if (xhr.status >= 200 && xhr.status < 300) {
-                                        resolve(new Response(xhr.responseText, {
-                                            status: xhr.status,
-                                            statusText: xhr.statusText,
-                                            headers: new Headers({
-                                                'Content-Type': xhr.getResponseHeader('Content-Type') || 'text/plain'
-                                            })
-                                        }));
-                                    } else {
-                                        reject(new Error('Network response was not ok'));
-                                    }
-                                };
-                                xhr.onerror = function() {
-                                    reject(new Error('Network error'));
-                                };
-                                xhr.send();
-                            });
-                        }
-
-                        return originalFetch.call(this, url, options);
-                    };
-
-                    // 4. DOM ready handler for icon fixing
-                    function fixIconsWhenReady() {
-                        if (document.readyState === 'loading') {
-                            document.addEventListener('DOMContentLoaded', fixIconsWhenReady);
-                            return;
-                        }
-
-                        setTimeout(() => {
-                            console.log('🎯 Starting icon replacement...');
-
-                            // Find all text nodes and replace icon names with emojis
-                            function replaceIconsInTextNodes(node) {
-                                if (node.nodeType === Node.TEXT_NODE) {
-                                    let text = node.textContent;
-                                    let hasReplacement = false;
-
-                                    for (const [iconName, emoji] of Object.entries(iconMap)) {
-                                        if (text.includes(iconName)) {
-                                            text = text.replace(new RegExp(iconName, 'g'), emoji);
-                                            hasReplacement = true;
-                                        }
-                                    }
-
-                                    if (hasReplacement) {
-                                        node.textContent = text;
-                                        console.log('🎨 Replaced icons in text: ' + text);
-                                    }
-                                } else if (node.nodeType === Node.ELEMENT_NODE) {
-                                    // Process child nodes
-                                    for (let child of node.childNodes) {
-                                        replaceIconsInTextNodes(child);
-                                    }
-
-                                    // Handle FontAwesome classes
-                                    if (node.className && typeof node.className === 'string') {
-                                        const classes = node.className.split(' ');
-                                        for (const className of classes) {
-                                            if (className.startsWith('fa-')) {
-                                                const iconName = className.substring(3);
-                                                if (iconMap[iconName]) {
-                                                    node.textContent = iconMap[iconName];
-                                                    node.style.fontFamily = 'system-ui, -apple-system, sans-serif';
-                                                    node.style.fontSize = '16px';
-                                                    console.log('🎨 Replaced FA icon: ' + iconName + ' with ' + iconMap[iconName]);
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-
-                            replaceIconsInTextNodes(document.body);
-
-                            // Also check for elements with specific data attributes
-                            const dataElements = document.querySelectorAll('[data-i18n]');
-                            dataElements.forEach(element => {
-                                const dataI18n = element.getAttribute('data-i18n');
-                                if (iconMap[dataI18n]) {
-                                    element.textContent = iconMap[dataI18n];
-                                    console.log('🎨 Replaced data-i18n icon: ' + dataI18n);
-                                }
-                            });
-
-                            console.log('✅ Icon replacement completed');
-                        }, 100);
-                    }
-
-                    fixIconsWhenReady();
-
-                    console.log('✅ FontAwesome icon fix initialized');
-                })();
-            """,
-            injectionTime: .atDocumentStart,
-            forMainFrameOnly: false
-        )
-        config.userContentController.addUserScript(fontAwesomeFixScript)
-
-        logger.info("Added WebExtensions API polyfill and FontAwesome icon fix")
-    }
+    //     logger.info("Added WebExtensions API bridge message handlers")
+    // }
 
     private func setupNavigationDelegate(for webView: WKWebView) {
         let delegate = NavigationDelegate(

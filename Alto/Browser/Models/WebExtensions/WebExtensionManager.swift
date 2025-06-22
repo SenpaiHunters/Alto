@@ -17,16 +17,38 @@ import WebKit
 final class ExtensionManager {
     static let shared = ExtensionManager()
 
+    // MARK: - Properties
+
     var loadedExtensions: [String: WebExtension] = [:]
-    private var extensionScripts: [String: String] = [:]
+    var enabledExtensions: Set<String> = []
+    private var extensionScripts: [String: [String]] = [:]
+    private var extensionStyles: [String: [String]] = [:]
     private let permissionManager = ExtensionPermissionManager()
+    private let storageManager = ExtensionStorageManager()
     private let logger = Logger(subsystem: "Alto.ExtensionManager", category: "ExtensionManager")
 
+    // Extension state persistence
+    private let extensionsDirectory: URL
+    private let stateFileURL: URL
+
+    // MARK: - Initialization
+
     private init() {
+        // Set up directories
+        let appSupport = FileManager.default.urls(
+            for: .applicationSupportDirectory,
+            in: .userDomainMask
+        ).first!
+        let altoDir = appSupport.appendingPathComponent("Alto")
+        extensionsDirectory = altoDir.appendingPathComponent("Extensions")
+        stateFileURL = altoDir.appendingPathComponent("ExtensionState.json")
+
+        createDirectoriesIfNeeded()
         logger.info("ExtensionManager initialized")
+        loadPersistedExtensions()
     }
 
-    // MARK: - Extension Loading
+    // MARK: - Extension Management
 
     func loadExtension(from url: URL) async throws {
         logger.info("Loading extension from: \(url.path)")
@@ -36,208 +58,457 @@ final class ExtensionManager {
 
         try await validateExtension(webExtension)
 
-        loadedExtensions[webExtension.id] = webExtension
-        await injectExtensionScripts(webExtension)
+        // Install extension to managed directory
+        let installedURL = try await installExtension(webExtension, from: url)
+        let installedExtension = WebExtension(
+            id: webExtension.id,
+            manifest: webExtension.manifest,
+            bundleURL: installedURL,
+            isEnabled: true
+        )
 
-        logger.info("Extension loaded successfully: \(manifest.name) (\(webExtension.id))")
+        loadedExtensions[installedExtension.id] = installedExtension
+        enabledExtensions.insert(installedExtension.id)
+
+        await processExtensionResources(installedExtension)
+        persistExtensionState()
+
+        logger.info("Extension loaded successfully: \(manifest.name) (\(installedExtension.id))")
     }
 
     func unloadExtension(id: String) {
-        defer {
-            loadedExtensions.removeValue(forKey: id)
-            extensionScripts.removeValue(forKey: id)
+        guard let webExtension = loadedExtensions[id] else {
+            logger.warning("Attempted to unload unknown extension: \(id)")
+            return
         }
 
-        if let webExtension = loadedExtensions[id] {
-            logger.info("Unloading extension: \(webExtension.manifest.name) (\(id))")
+        logger.info("Unloading extension: \(webExtension.manifest.name) (\(id))")
+
+        // Clean up resources
+        extensionScripts.removeValue(forKey: id)
+        extensionStyles.removeValue(forKey: id)
+        loadedExtensions.removeValue(forKey: id)
+        enabledExtensions.remove(id)
+
+        // Clean up storage
+        storageManager.clearExtensionData(id)
+
+        // Remove from disk
+        removeExtensionFromDisk(id)
+
+        persistExtensionState()
+    }
+
+    func toggleExtension(id: String) {
+        guard loadedExtensions[id] != nil else { return }
+
+        if enabledExtensions.contains(id) {
+            enabledExtensions.remove(id)
+            logger.info("Disabled extension: \(id)")
         } else {
-            logger.warning("Attempted to unload unknown extension: \(id)")
+            enabledExtensions.insert(id)
+            logger.info("Enabled extension: \(id)")
+        }
+
+        persistExtensionState()
+    }
+
+    func reloadExtension(id: String) async throws {
+        guard let webExtension = loadedExtensions[id] else {
+            throw ExtensionError.extensionLoadError("Extension not found: \(id)")
+        }
+
+        logger.info("Reloading extension: \(webExtension.manifest.name)")
+
+        // Clear existing resources
+        extensionScripts.removeValue(forKey: id)
+        extensionStyles.removeValue(forKey: id)
+
+        // Reload resources
+        await processExtensionResources(webExtension)
+
+        logger.info("Extension reloaded: \(webExtension.manifest.name)")
+    }
+
+    // MARK: - Content Script Injection
+
+    func getContentScripts(for url: URL) -> (scripts: [String], styles: [String]) {
+        var matchingScripts: [String] = []
+        var matchingStyles: [String] = []
+
+        for (extensionId, webExtension) in loadedExtensions {
+            guard enabledExtensions.contains(extensionId),
+                  webExtension.matchesURL(url) else { continue }
+
+            if let scripts = extensionScripts[extensionId] {
+                matchingScripts.append(contentsOf: scripts)
+            }
+
+            if let styles = extensionStyles[extensionId] {
+                matchingStyles.append(contentsOf: styles)
+            }
+        }
+
+        return (scripts: matchingScripts, styles: matchingStyles)
+    }
+
+    func injectContentScripts(into webView: WKWebView, for url: URL) {
+        let (scripts, styles) = getContentScripts(for: url)
+
+        // Inject styles
+        for style in styles {
+            let styleScript = """
+                (function() {
+                    const style = document.createElement('style');
+                    style.textContent = `\(style.replacingOccurrences(of: "`", with: "\\`"))`;
+                    document.head.appendChild(style);
+                })();
+            """
+
+            let userScript = WKUserScript(
+                source: styleScript,
+                injectionTime: .atDocumentStart,
+                forMainFrameOnly: false
+            )
+            webView.configuration.userContentController.addUserScript(userScript)
+        }
+
+        // Inject scripts
+        for script in scripts {
+            let userScript = WKUserScript(
+                source: script,
+                injectionTime: .atDocumentEnd,
+                forMainFrameOnly: false
+            )
+            webView.configuration.userContentController.addUserScript(userScript)
+        }
+
+        if !scripts.isEmpty || !styles.isEmpty {
+            logger.info("Injected \(scripts.count) scripts and \(styles.count) styles for URL: \(url)")
         }
     }
 
-    func getExtensionScripts(for url: URL) -> [String] {
-        loadedExtensions.values.compactMap { webExtension in
-            webExtension.matchesURL(url) ? extensionScripts.values.joined(separator: "\n") : nil
-        }
+    // MARK: - Extension Information
+
+    func getExtensionInfo(id: String) -> WebExtension? {
+        loadedExtensions[id]
+    }
+
+    func getAllExtensions() -> [WebExtension] {
+        Array(loadedExtensions.values)
+    }
+
+    func getEnabledExtensions() -> [WebExtension] {
+        loadedExtensions.values.filter { enabledExtensions.contains($0.id) }
     }
 
     // MARK: - Private Methods
+
+    private func createDirectoriesIfNeeded() {
+        do {
+            try FileManager.default.createDirectory(
+                at: extensionsDirectory,
+                withIntermediateDirectories: true
+            )
+        } catch {
+            logger.error("Failed to create extensions directory: \(error.localizedDescription)")
+        }
+    }
 
     private func loadManifest(from url: URL) async throws -> ExtensionManifest {
         let manifestPath = url.appendingPathComponent("manifest.json")
         logger.info("Reading manifest from: \(manifestPath.path)")
 
-        let manifestData = try Data(contentsOf: manifestPath)
-        let manifest = try JSONDecoder().decode(ExtensionManifest.self, from: manifestData)
+        guard FileManager.default.fileExists(atPath: manifestPath.path) else {
+            throw ExtensionError.manifestNotFound
+        }
 
-        logger.info("Parsed manifest for extension: \(manifest.name) v\(manifest.version)")
-        return manifest
+        let manifestData = try Data(contentsOf: manifestPath)
+
+        do {
+            let manifest = try JSONDecoder().decode(ExtensionManifest.self, from: manifestData)
+            logger.info("Parsed manifest for extension: \(manifest.name) v\(manifest.version)")
+            return manifest
+        } catch {
+            throw ExtensionError.invalidManifest(error.localizedDescription)
+        }
     }
 
     private func createWebExtension(from manifest: ExtensionManifest, bundleURL: URL) -> WebExtension {
-        let webExtension = WebExtension(
-            id: manifest.extensionId ?? UUID().uuidString,
-            manifest: manifest,
-            bundleURL: bundleURL
-        )
+        let extensionId = manifest.extensionId ?? generateExtensionId(from: manifest)
 
-        logger.info("Created WebExtension with ID: \(webExtension.id)")
-        return webExtension
+        return WebExtension(
+            id: extensionId,
+            manifest: manifest,
+            bundleURL: bundleURL,
+            isEnabled: true
+        )
+    }
+
+    private func generateExtensionId(from manifest: ExtensionManifest) -> String {
+        let identifier = "\(manifest.name)-\(manifest.version)".lowercased()
+            .replacingOccurrences(of: " ", with: "-")
+            .replacingOccurrences(of: "[^a-z0-9-]", with: "", options: .regularExpression)
+        return identifier
     }
 
     private func validateExtension(_ webExtension: WebExtension) async throws {
-        try await permissionManager.validatePermissions(webExtension.manifest.permissions ?? [])
+        // Validate manifest version
+        guard [2, 3].contains(webExtension.manifest.manifestVersion) else {
+            throw ExtensionError.unsupportedManifestVersion(webExtension.manifest.manifestVersion)
+        }
+
+        // Validate required fields
+        guard !webExtension.manifest.name.isEmpty else {
+            throw ExtensionError.invalidManifest("Extension name is required")
+        }
+
+        guard !webExtension.manifest.version.isEmpty else {
+            throw ExtensionError.invalidManifest("Extension version is required")
+        }
+
+        // Validate permissions
+        if let permissions = webExtension.manifest.permissions {
+            try await permissionManager.validatePermissions(permissions)
+        }
+
+        // Validate content scripts
+        if let contentScripts = webExtension.manifest.contentScripts {
+            try validateContentScripts(contentScripts, bundleURL: webExtension.bundleURL)
+        }
+
+        // Validate popup files
+        if let popupPath = webExtension.manifest.action?.defaultPopup ??
+            webExtension.manifest.browserAction?.defaultPopup {
+            let popupURL = webExtension.bundleURL.appendingPathComponent(popupPath)
+            guard FileManager.default.fileExists(atPath: popupURL.path) else {
+                throw ExtensionError.missingContentScript(popupPath)
+            }
+        }
+
         logger.info("Extension validation passed for: \(webExtension.manifest.name)")
     }
 
-    private func injectExtensionScripts(_ webExtension: WebExtension) async {
+    private func validateContentScripts(_ contentScripts: [ContentScript], bundleURL: URL) throws {
+        for script in contentScripts {
+            // Validate JavaScript files exist
+            for jsFile in script.js {
+                let scriptPath = bundleURL.appendingPathComponent(jsFile)
+                guard FileManager.default.fileExists(atPath: scriptPath.path) else {
+                    throw ExtensionError.missingContentScript(jsFile)
+                }
+            }
+
+            // Validate CSS files exist
+            if let cssFiles = script.css {
+                for cssFile in cssFiles {
+                    let stylePath = bundleURL.appendingPathComponent(cssFile)
+                    guard FileManager.default.fileExists(atPath: stylePath.path) else {
+                        throw ExtensionError.missingContentScript(cssFile)
+                    }
+                }
+            }
+
+            // Validate match patterns
+            for pattern in script.matches {
+                guard isValidMatchPattern(pattern) else {
+                    throw ExtensionError.invalidManifest("Invalid match pattern: \(pattern)")
+                }
+            }
+        }
+    }
+
+    private func isValidMatchPattern(_ pattern: String) -> Bool {
+        // Basic validation for match patterns
+        if pattern == "<all_urls>" { return true }
+
+        let validSchemes = ["http", "https", "file", "ftp", "*"]
+        let components = pattern.components(separatedBy: "://")
+
+        guard components.count == 2 else { return false }
+
+        let scheme = components[0]
+        return validSchemes.contains(scheme)
+    }
+
+    private func installExtension(_ webExtension: WebExtension, from sourceURL: URL) async throws -> URL {
+        let destinationURL = extensionsDirectory.appendingPathComponent(webExtension.id)
+
+        // Remove existing installation
+        if FileManager.default.fileExists(atPath: destinationURL.path) {
+            try FileManager.default.removeItem(at: destinationURL)
+        }
+
+        // Copy extension files
+        try FileManager.default.copyItem(at: sourceURL, to: destinationURL)
+
+        logger.info("Extension installed to: \(destinationURL.path)")
+        return destinationURL
+    }
+
+    private func removeExtensionFromDisk(_ extensionId: String) {
+        let extensionURL = extensionsDirectory.appendingPathComponent(extensionId)
+
+        do {
+            if FileManager.default.fileExists(atPath: extensionURL.path) {
+                try FileManager.default.removeItem(at: extensionURL)
+                logger.info("Removed extension from disk: \(extensionId)")
+            }
+        } catch {
+            logger.error("Failed to remove extension from disk: \(error.localizedDescription)")
+        }
+    }
+
+    private func processExtensionResources(_ webExtension: WebExtension) async {
+        await withTaskGroup(of: Void.self) { group in
+            group.addTask { [weak self] in
+                await self?.loadContentScripts(webExtension)
+            }
+
+            group.addTask { [weak self] in
+                await self?.loadContentStyles(webExtension)
+            }
+        }
+    }
+
+    private func loadContentScripts(_ webExtension: WebExtension) async {
         guard let contentScripts = webExtension.manifest.contentScripts else { return }
 
-        await withTaskGroup(of: Void.self) { group in
-            for script in contentScripts {
-                group.addTask { [weak self] in
-                    await self?.processContentScript(script, for: webExtension)
+        var scripts: [String] = []
+
+        for contentScript in contentScripts {
+            for jsFile in contentScript.js {
+                do {
+                    let scriptURL = webExtension.bundleURL.appendingPathComponent(jsFile)
+                    let scriptContent = try String(contentsOf: scriptURL)
+
+                    // Wrap script with extension context
+                    let wrappedScript = wrapContentScript(scriptContent, extensionId: webExtension.id)
+                    scripts.append(wrappedScript)
+                } catch {
+                    logger.error("Failed to load script \(jsFile): \(error.localizedDescription)")
                 }
             }
         }
-    }
 
-    private func processContentScript(_ script: ContentScript, for webExtension: WebExtension) async {
-        do {
-            let scriptContent = try await loadScriptContent(from: script.js, in: webExtension.bundleURL)
-            let scriptKey = "\(webExtension.id)_\(script.js.first ?? "")"
-            extensionScripts[scriptKey] = scriptContent
-        } catch {
-            logger.error("Failed to load script content: \(error.localizedDescription)")
+        if !scripts.isEmpty {
+            extensionScripts[webExtension.id] = scripts
+            logger.info("Loaded \(scripts.count) content scripts for extension: \(webExtension.manifest.name)")
         }
     }
 
-    private func loadScriptContent(from paths: [String], in bundleURL: URL) async throws -> String {
-        try await withThrowingTaskGroup(of: String.self) { group in
-            for path in paths {
-                group.addTask {
-                    let scriptURL = bundleURL.appendingPathComponent(path)
-                    return try String(contentsOf: scriptURL)
+    private func loadContentStyles(_ webExtension: WebExtension) async {
+        guard let contentScripts = webExtension.manifest.contentScripts else { return }
+
+        var styles: [String] = []
+
+        for contentScript in contentScripts {
+            if let cssFiles = contentScript.css {
+                for cssFile in cssFiles {
+                    do {
+                        let styleURL = webExtension.bundleURL.appendingPathComponent(cssFile)
+                        let styleContent = try String(contentsOf: styleURL)
+                        styles.append(styleContent)
+                    } catch {
+                        logger.error("Failed to load style \(cssFile): \(error.localizedDescription)")
+                    }
+                }
+            }
+        }
+
+        if !styles.isEmpty {
+            extensionStyles[webExtension.id] = styles
+            logger.info("Loaded \(styles.count) content styles for extension: \(webExtension.manifest.name)")
+        }
+    }
+
+    private func wrapContentScript(_ script: String, extensionId: String) -> String {
+        """
+        (function() {
+            // Extension context for \(extensionId)
+            const extensionId = '\(extensionId)';
+
+            // Inject extension APIs if not already available
+            if (typeof chrome === 'undefined' || typeof chrome.runtime === 'undefined') {
+                console.warn('Extension APIs not available for content script');
+            }
+
+            // Original script content
+            \(script)
+        })();
+        """
+    }
+
+    private func loadPersistedExtensions() {
+        guard FileManager.default.fileExists(atPath: stateFileURL.path) else {
+            logger.info("No persisted extension state found")
+            return
+        }
+
+        do {
+            let data = try Data(contentsOf: stateFileURL)
+            let state = try JSONDecoder().decode(ExtensionState.self, from: data)
+
+            enabledExtensions = Set(state.enabledExtensions)
+
+            // Load extensions from disk
+            for extensionId in state.installedExtensions {
+                Task {
+                    await loadPersistedExtension(id: extensionId)
                 }
             }
 
-            var combinedScript = ""
-            for try await content in group {
-                combinedScript += content + "\n"
-            }
-            return combinedScript
-        }
-    }
-}
-
-// MARK: - WebExtension
-
-struct WebExtension: Identifiable, Hashable {
-    let id: String
-    let manifest: ExtensionManifest
-    let bundleURL: URL
-
-    func hash(into hasher: inout Hasher) {
-        hasher.combine(id)
-    }
-
-    static func == (lhs: WebExtension, rhs: WebExtension) -> Bool {
-        lhs.id == rhs.id
-    }
-
-    func matchesURL(_ url: URL) -> Bool {
-        guard let contentScripts = manifest.contentScripts else { return false }
-
-        return contentScripts.contains { script in
-            script.matches.contains { pattern in
-                matchesPattern(pattern, url: url)
-            }
+            logger.info("Loaded persisted extension state: \(state.installedExtensions.count) extensions")
+        } catch {
+            logger.error("Failed to load persisted extensions: \(error.localizedDescription)")
         }
     }
 
-    private func matchesPattern(_ pattern: String, url: URL) -> Bool {
-        let regexPattern = pattern
-            .replacingOccurrences(of: "*", with: ".*")
-            .replacingOccurrences(of: "://", with: "://")
+    private func loadPersistedExtension(id: String) async {
+        let extensionURL = extensionsDirectory.appendingPathComponent(id)
+
+        guard FileManager.default.fileExists(atPath: extensionURL.path) else {
+            logger.warning("Persisted extension not found on disk: \(id)")
+            return
+        }
 
         do {
-            let regex = try NSRegularExpression(pattern: regexPattern)
-            let range = NSRange(location: 0, length: url.absoluteString.count)
-            return regex.firstMatch(in: url.absoluteString, options: [], range: range) != nil
+            let manifest = try await loadManifest(from: extensionURL)
+            let webExtension = WebExtension(
+                id: id,
+                manifest: manifest,
+                bundleURL: extensionURL,
+                isEnabled: enabledExtensions.contains(id)
+            )
+
+            loadedExtensions[id] = webExtension
+            await processExtensionResources(webExtension)
+
+            logger.info("Loaded persisted extension: \(manifest.name)")
         } catch {
-            return false
+            logger.error("Failed to load persisted extension \(id): \(error.localizedDescription)")
+        }
+    }
+
+    private func persistExtensionState() {
+        let state = ExtensionState(
+            installedExtensions: Array(loadedExtensions.keys),
+            enabledExtensions: Array(enabledExtensions)
+        )
+
+        do {
+            let data = try JSONEncoder().encode(state)
+            try data.write(to: stateFileURL)
+            logger.info("Persisted extension state")
+        } catch {
+            logger.error("Failed to persist extension state: \(error.localizedDescription)")
         }
     }
 }
 
-// MARK: - ExtensionManifest
+// MARK: - ExtensionState
 
-struct ExtensionManifest: Codable, Hashable {
-    let manifestVersion: Int
-    let name: String
-    let version: String
-    let description: String?
-    let extensionId: String?
-    let contentScripts: [ContentScript]?
-    let background: BackgroundScript?
-    let permissions: [String]?
-    let hostPermissions: [String]?
-    let action: ActionDefinition?
-    let browserAction: ActionDefinition?
-    let icons: [String: String]?
-
-    enum CodingKeys: String, CodingKey {
-        case manifestVersion = "manifest_version"
-        case name, version, description
-        case extensionId = "extension_id"
-        case contentScripts = "content_scripts"
-        case background, permissions
-        case hostPermissions = "host_permissions"
-        case action
-        case browserAction = "browser_action"
-        case icons
-    }
-}
-
-// MARK: - ContentScript
-
-struct ContentScript: Codable, Hashable {
-    let matches: [String]
-    let js: [String]
-    let css: [String]?
-    let runAt: String?
-
-    enum CodingKeys: String, CodingKey {
-        case matches
-        case js
-        case css
-        case runAt = "run_at"
-    }
-}
-
-// MARK: - BackgroundScript
-
-struct BackgroundScript: Codable, Hashable {
-    let serviceWorker: String?
-    let scripts: [String]?
-    let persistent: Bool?
-
-    enum CodingKeys: String, CodingKey {
-        case serviceWorker = "service_worker"
-        case scripts, persistent
-    }
-}
-
-// MARK: - ActionDefinition
-
-struct ActionDefinition: Codable, Hashable {
-    let defaultTitle: String?
-    let defaultIcon: [String: String]?
-    let defaultPopup: String?
-
-    enum CodingKeys: String, CodingKey {
-        case defaultTitle = "default_title"
-        case defaultIcon = "default_icon"
-        case defaultPopup = "default_popup"
-    }
+private struct ExtensionState: Codable {
+    let installedExtensions: [String]
+    let enabledExtensions: [String]
 }

@@ -103,25 +103,3 @@ final class ExtensionPermissionManager {
         permission.range(of: #"\*://.*"#, options: .regularExpression) != nil
     }
 }
-
-// MARK: - ExtensionError
-
-enum ExtensionError: Error, LocalizedError {
-    case invalidPermission(String)
-    case permissionDenied(String)
-    case manifestParsingError(String)
-    case extensionLoadError(String)
-
-    var errorDescription: String? {
-        switch self {
-        case let .invalidPermission(permission):
-            "Invalid permission: \(permission)"
-        case let .permissionDenied(permission):
-            "Permission denied: \(permission)"
-        case let .manifestParsingError(error):
-            "Manifest parsing error: \(error)"
-        case let .extensionLoadError(error):
-            "Extension load error: \(error)"
-        }
-    }
-}
