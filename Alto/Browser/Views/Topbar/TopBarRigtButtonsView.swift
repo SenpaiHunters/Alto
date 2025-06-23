@@ -12,6 +12,10 @@ struct TopBarRigtButtonsView: View {
                 }
             }, icon: "plus", active: true)
 
+            AltoButton(action: {
+                Alto.shared.spaceManager.newSpace(name: "asdf")
+            }, icon: "rectangle.2.swap", active: true)
+
             // AltoButton(action: {altoState.toggleTopbar()}, icon: "rectangle")
         }
         .padding(.leading, 40)

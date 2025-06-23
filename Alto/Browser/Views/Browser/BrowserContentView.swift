@@ -39,7 +39,7 @@ struct BrowserContentView: View {
                             ZStack {
                                 VisualEffectView(material: .hudWindow, state: .active)
                                     .cornerRadius(10)
-                                
+
                                 Image("Logo")
                                     .opacity(0.5)
                                     .blendMode(.softLight)
@@ -129,7 +129,7 @@ struct BrowserContentView: View {
                     ZStack {
                         VisualEffectView(material: .hudWindow, state: .active)
                             .cornerRadius(10)
-                        
+
                         Image("Logo")
                             .opacity(0.5)
                             .blendMode(.softLight)

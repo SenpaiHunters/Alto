@@ -4,7 +4,7 @@ import OpenADK
 import SwiftUI
 
 struct BrowserView: View {
-    var genaricState: any StateProtocol
+    var genaricState: GenaricState
 
     // If you can find a better solution please make a pr!
     var state: AltoState? {

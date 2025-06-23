@@ -7,7 +7,7 @@ import UniformTypeIdentifiers
 
 @Observable
 class DropZoneViewModel {
-    var tabLocation: any TabLocationProtocol
+    var tabLocation: TabLocation
     var state: AltoState
 
     var isTargeted = false
@@ -20,7 +20,7 @@ class DropZoneViewModel {
         tabLocation.tabs.isEmpty
     }
 
-    init(state: AltoState, tabLocation: any TabLocationProtocol) {
+    init(state: AltoState, tabLocation: TabLocation) {
         self.state = state
         self.tabLocation = tabLocation
     }

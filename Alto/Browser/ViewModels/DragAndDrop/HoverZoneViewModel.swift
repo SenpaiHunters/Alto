@@ -11,7 +11,7 @@ class HoverZoneViewModel {
         case end
     }
 
-    var tabLocation: TabLocationProtocol
+    var tabLocation: TabLocation
     var state: AltoState
     var placement: ZonePlacement
     var index: Int
