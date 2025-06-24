@@ -48,7 +48,7 @@ public final class ABFilterListManager: ObservableObject {
         setupDefaultFilterLists()
         loadFilterListsFromFile()
         loadCacheFromFiles()
-        logger.info("📋 AdBlock storage initialized at: \(self.applicationSupportURL.path)")
+        logger.info("📋 AdBlock storage initialized at: \(applicationSupportURL.path)")
     }
 
     // MARK: - Setup
@@ -79,7 +79,7 @@ public final class ABFilterListManager: ObservableObject {
         availableFilterLists[index].isEnabled.toggle()
         saveFilterListsToFile()
 
-        logger.info("🔄 Toggled filter list \(filterList.name): \(self.availableFilterLists[index].isEnabled ? "ON" : "OFF")")
+        logger.info("🔄 Toggled filter list \(filterList.name): \(availableFilterLists[index].isEnabled ? "ON" : "OFF")")
     }
 
     /// Add a custom filter list
@@ -118,15 +118,15 @@ public final class ABFilterListManager: ObservableObject {
     /// Get compiled rules as JSON string for WebKit
     public func getCompiledRules(excludingDomains: Set<String> = []) async -> String {
         let allRules = await getAllCompiledRules(excludingDomains: excludingDomains)
-        
+
         // Apply the old 25k limit for backward compatibility
         let limitedRules = Array(allRules.prefix(totalMaxRules))
-        
+
         let result = encodeRules(limitedRules) ?? "[]"
         logger.info("✅ Compiled \(limitedRules.count) rules (limited from \(allRules.count) total)")
         return result
     }
-    
+
     /// Get all compiled rules as objects (without 25k limit for multi-list support)
     public func getAllCompiledRules(excludingDomains: Set<String> = []) async -> [ABContentRule] {
         // Start with built-in blocking rules first
@@ -143,14 +143,17 @@ public final class ABFilterListManager: ObservableObject {
 
         guard !enabledLists.isEmpty else {
             logger.info("✅ No external filter lists enabled - using built-in rules only")
-            
+
             // Add site-specific whitelist rules at the END (they use ignore-previous-rules)
             let youtubeRules = getYouTubeWhitelistRules()
             let redditRules = getRedditWhitelistRules()
             allRules.append(contentsOf: youtubeRules)
             allRules.append(contentsOf: redditRules)
-            logger.info("📝 Added \(youtubeRules.count) YouTube + \(redditRules.count) Reddit whitelist rules (total: \(allRules.count))")
-            
+            logger
+                .info(
+                    "📝 Added \(youtubeRules.count) YouTube + \(redditRules.count) Reddit whitelist rules (total: \(allRules.count))"
+                )
+
             return allRules
         }
 
@@ -162,7 +165,7 @@ public final class ABFilterListManager: ObservableObject {
 
                 let rules = parseAdBlockFilters(filterContent, excludingDomains: excludingDomains)
                 allRules.append(contentsOf: rules) // Don't limit per-list anymore
-                
+
                 logger.info("📝 Added \(rules.count) rules from \(filterList.name) (total now: \(allRules.count))")
             } catch {
                 logger.error("❌ Failed to get filter list \(filterList.name): \(error)")
@@ -174,9 +177,13 @@ public final class ABFilterListManager: ObservableObject {
         let redditRules = getRedditWhitelistRules()
         allRules.append(contentsOf: youtubeRules)
         allRules.append(contentsOf: redditRules)
-        logger.info("📝 Added \(youtubeRules.count) YouTube + \(redditRules.count) Reddit whitelist rules at end (total: \(allRules.count))")
+        logger
+            .info(
+                "📝 Added \(youtubeRules.count) YouTube + \(redditRules.count) Reddit whitelist rules at end (total: \(allRules.count))"
+            )
 
-        logger.info("✅ Generated \(allRules.count) total rules from \(enabledLists.count) filter lists + site whitelists")
+        logger
+            .info("✅ Generated \(allRules.count) total rules from \(enabledLists.count) filter lists + site whitelists")
         return allRules
     }
 
@@ -250,20 +257,24 @@ public final class ABFilterListManager: ObservableObject {
             (".*reddit\\.com.*", ABResourceType.allWebKitTypes, "Reddit Main Domain (whitelist)"),
             (".*redditstatic\\.com.*", ABResourceType.allWebKitTypes, "Reddit Static Assets (whitelist)"),
             (".*redd\\.it.*", ABResourceType.allWebKitTypes, "Reddit Short Links (whitelist)"),
-            
+
             // Reddit API endpoints
             (".*reddit\\.com\\/api.*", ABResourceType.allWebKitTypes, "Reddit API (whitelist)"),
             (".*reddit\\.com\\/svc.*", ABResourceType.allWebKitTypes, "Reddit Services (whitelist)"),
-            
+
             // Reddit static resources
             (".*reddit\\.com.*\\.js.*", [ABResourceType.script.rawValue], "Reddit JS Files (whitelist)"),
             (".*reddit\\.com.*\\.css.*", [ABResourceType.styleSheet.rawValue], "Reddit CSS Files (whitelist)"),
             (".*redditstatic\\.com.*\\.js.*", [ABResourceType.script.rawValue], "Reddit Static JS (whitelist)"),
             (".*redditstatic\\.com.*\\.css.*", [ABResourceType.styleSheet.rawValue], "Reddit Static CSS (whitelist)"),
-            
+
             // Reddit Shreddit (new Reddit) components
-            (".*redditstatic\\.com\\/shreddit.*", ABResourceType.allWebKitTypes, "Reddit Shreddit Components (whitelist)"),
-            
+            (
+                ".*redditstatic\\.com\\/shreddit.*",
+                ABResourceType.allWebKitTypes,
+                "Reddit Shreddit Components (whitelist)"
+            ),
+
             // Reddit images and media
             (".*i\\.redd\\.it.*", ABResourceType.allWebKitTypes, "Reddit Images (whitelist)"),
             (".*v\\.redd\\.it.*", ABResourceType.allWebKitTypes, "Reddit Videos (whitelist)"),
@@ -412,7 +423,7 @@ public final class ABFilterListManager: ObservableObject {
             }
 
             if rules.count >= maxParsingRules {
-                logger.warning("⚠️ Reached maximum parsing rules limit (\(self.maxParsingRules))")
+                logger.warning("⚠️ Reached maximum parsing rules limit (\(maxParsingRules))")
                 break
             }
         }
@@ -478,7 +489,8 @@ public final class ABFilterListManager: ObservableObject {
                         if !cleanModifier.isEmpty {
                             // logger
                             //     .debug(
-                            //         "❓ Unknown modifier: \(cleanModifier) in rule: \(String(originalPattern.prefix(50)))"
+                            //         "❓ Unknown modifier: \(cleanModifier) in rule:
+                            //         \(String(originalPattern.prefix(50)))"
                             //     )
                         }
                     }
@@ -488,7 +500,8 @@ public final class ABFilterListManager: ObservableObject {
                     resourceTypes = modifierTypes
                     // logger
                     //     .debug(
-                    //         "🎯 Resource-specific rule: \(resourceTypes.joined(separator: ",")) for \(String(originalPattern.prefix(30)))"
+                    //         "🎯 Resource-specific rule: \(resourceTypes.joined(separator: ",")) for
+                    //         \(String(originalPattern.prefix(30)))"
                     //     )
                 }
             }
@@ -535,7 +548,8 @@ public final class ABFilterListManager: ObservableObject {
 
         // logger
         //     .debug(
-        //         "🎨 Cosmetic rule: \(domainPart.isEmpty ? "global" : domainPart) -> hide '\(String(selector.prefix(30)))'"
+        //         "🎨 Cosmetic rule: \(domainPart.isEmpty ? "global" : domainPart) -> hide
+        //         '\(String(selector.prefix(30)))'"
         //     )
 
         // Handle domain-specific rules
@@ -671,7 +685,7 @@ public final class ABFilterListManager: ObservableObject {
                 }
             }
 
-            logger.info("📋 Loaded \(self.filterListCache.count) cached filter lists from files")
+            logger.info("📋 Loaded \(filterListCache.count) cached filter lists from files")
         } catch {
             logger.warning("⚠️ Failed to load filter cache directory: \(error)")
         }
@@ -689,9 +703,9 @@ public final class ABFilterListManager: ObservableObject {
                 await MainActor.run {
                     self.availableFilterLists[i].lastUpdated = Date()
                 }
-                logger.info("✅ Updated filter list: \(self.availableFilterLists[i].name)")
+                logger.info("✅ Updated filter list: \(availableFilterLists[i].name)")
             } catch {
-                logger.error("❌ Failed to update filter list \(self.availableFilterLists[i].name): \(error)")
+                logger.error("❌ Failed to update filter list \(availableFilterLists[i].name): \(error)")
             }
         }
 

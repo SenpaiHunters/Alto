@@ -34,11 +34,11 @@ public class ABManager: ObservableObject {
     // MARK: - WebKit Content Rule List
 
     private var compiledRuleList: WKContentRuleList?
-    
+
     // MARK: - Initialization State
-    
+
     private var isInitialized = false
-    private var initializationTask: Task<Void, Never>?
+    private var initializationTask: Task<(), Never>?
 
     // File-based storage
     private let settingsURL: URL
@@ -72,25 +72,25 @@ public class ABManager: ObservableObject {
             logger.info("⏭️ Content blocking already initialized, skipping")
             return
         }
-        
+
         // If there's already an initialization task running, wait for it
         if let existingTask = initializationTask {
             logger.info("⏳ Content blocking initialization already in progress, waiting...")
             await existingTask.value
             return
         }
-        
+
         // Start new initialization task
         initializationTask = Task {
             await performInitialization()
         }
-        
+
         await initializationTask?.value
     }
-    
+
     private func performInitialization() async {
         guard !isInitialized else { return }
-        
+
         logger.info("🛡️ Initializing content blocking system...")
 
         do {
@@ -98,13 +98,13 @@ public class ABManager: ObservableObject {
 
             // Compile rules
             await compileContentRules()
-            
+
             isInitialized = true
             logger.info("✅ Content blocking system initialized successfully")
         } catch {
             logger.error("❌ Failed to initialize content blocking: \(error)")
         }
-        
+
         initializationTask = nil
     }
 
@@ -156,7 +156,7 @@ public class ABManager: ObservableObject {
             }
         }
 
-        logger.info("🔄 Ad blocking toggled: \(self.isEnabled ? "ON" : "OFF")")
+        logger.info("🔄 Ad blocking toggled: \(isEnabled ? "ON" : "OFF")")
 
         // Trigger UI update
         objectWillChange.send()
@@ -291,7 +291,7 @@ public class ABManager: ObservableObject {
 
             logger
                 .info(
-                    "📋 Loaded settings from file: enabled=\(self.isEnabled), blocked=\(self.totalBlockedRequests), whitelist=\(self.whitelistedDomains.count)"
+                    "📋 Loaded settings from file: enabled=\(isEnabled), blocked=\(totalBlockedRequests), whitelist=\(whitelistedDomains.count)"
                 )
         } catch {
             logger.error("❌ Failed to load settings from file: \(error)")

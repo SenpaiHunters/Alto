@@ -13,9 +13,9 @@ import SwiftUI
 public struct DownloadButtonView: View {
     @Bindable private var viewModel = DownloadViewModel()
     @State private var isHovered = false
-    
+
     public init() {}
-    
+
     public var body: some View {
         Button(action: {
             viewModel.toggleDownloads()
@@ -25,18 +25,18 @@ public struct DownloadButtonView: View {
                 Image(systemName: "arrow.down.circle")
                     .font(.system(size: 16, weight: .medium))
                     .foregroundColor(isHovered ? .primary : .secondary)
-                
+
                 // Badge for active downloads
-                if case .active(let count) = viewModel.downloadButtonState {
+                if case let .active(count) = viewModel.downloadButtonState {
                     VStack {
                         HStack {
                             Spacer()
-                            
+
                             ZStack {
                                 Circle()
                                     .fill(.red)
                                     .frame(width: 12, height: 12)
-                                
+
                                 Text("\(count)")
                                     .font(.system(size: 8, weight: .bold))
                                     .foregroundColor(.white)
@@ -71,7 +71,7 @@ struct DownloadDropdownView: View {
     @Bindable var viewModel: DownloadViewModel
     @State private var animationOffset: CGFloat = -10
     @State private var animationOpacity: Double = 0
-    
+
     var body: some View {
         VStack(spacing: 0) {
             // Header - matching the original design
@@ -80,9 +80,9 @@ struct DownloadDropdownView: View {
                     .font(.system(size: 11, weight: .medium))
                     .foregroundColor(.secondary)
                     .tracking(0.5)
-                
+
                 Spacer()
-                
+
                 if viewModel.hasDownloads {
                     Button("Clear") {
                         viewModel.clearCompleted()
@@ -95,13 +95,13 @@ struct DownloadDropdownView: View {
             .padding(.horizontal, 16)
             .padding(.top, 16)
             .padding(.bottom, 12)
-            
+
             // Content
             if viewModel.hasDownloads {
                 VStack(spacing: 0) {
                     ForEach(viewModel.recentDownloads, id: \.id) { download in
                         DownloadRowView(download: download, viewModel: viewModel)
-                        
+
                         if download.id != viewModel.recentDownloads.last?.id {
                             Divider()
                                 .padding(.leading, 56)
@@ -114,7 +114,7 @@ struct DownloadDropdownView: View {
                     Image(systemName: "arrow.down.circle")
                         .font(.title2)
                         .foregroundColor(.secondary.opacity(0.5))
-                    
+
                     Text("No downloads yet")
                         .font(.callout)
                         .foregroundColor(.secondary)
@@ -122,16 +122,16 @@ struct DownloadDropdownView: View {
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 20)
             }
-            
+
             if viewModel.hasDownloads {
                 // Footer - matching the original design
                 HStack {
                     Text("View all downloads")
                         .font(.system(size: 13, weight: .medium))
                         .foregroundColor(.primary)
-                    
+
                     Spacer()
-                    
+
                     Image(systemName: "arrow.up.right")
                         .font(.system(size: 11, weight: .medium))
                         .foregroundColor(.secondary)
@@ -166,7 +166,7 @@ struct DownloadRowView: View {
     let download: DownloadItem
     @Bindable var viewModel: DownloadViewModel
     @State private var isHovered = false
-    
+
     var body: some View {
         HStack(spacing: 12) {
             // Download icon with state - matching original design
@@ -174,12 +174,12 @@ struct DownloadRowView: View {
                 Circle()
                     .fill(iconBackgroundColor)
                     .frame(width: 32, height: 32)
-                
+
                 Image(systemName: downloadIcon)
                     .font(.system(size: 14, weight: .medium))
                     .foregroundColor(iconColor)
             }
-            
+
             VStack(alignment: .leading, spacing: 3) {
                 // Filename
                 Text(download.filename)
@@ -187,20 +187,20 @@ struct DownloadRowView: View {
                     .lineLimit(1)
                     .truncationMode(.middle)
                     .foregroundColor(.primary)
-                
+
                 // Progress info - simplified to avoid compiler error
                 progressInfoView
-                
+
                 // Progress bar for active downloads
-                if download.state.isActive && download.progress > 0 {
+                if download.state.isActive, download.progress > 0 {
                     ProgressView(value: download.progress)
                         .progressViewStyle(LinearProgressViewStyle(tint: progressColor))
                         .frame(height: 2)
                 }
             }
-            
+
             Spacer()
-            
+
             // Action button - matching original design
             if isHovered {
                 Button(action: {
@@ -239,70 +239,70 @@ struct DownloadRowView: View {
             downloadContextMenu
         }
     }
-    
+
     // MARK: - Computed Properties
-    
+
     private var downloadIcon: String {
         switch download.state {
         case .pending:
-            return "clock"
+            "clock"
         case .downloading:
-            return "arrow.down"
+            "arrow.down"
         case .paused:
-            return "pause"
+            "pause"
         case .completed:
-            return "checkmark"
+            "checkmark"
         case .failed:
-            return "exclamationmark"
+            "exclamationmark"
         case .cancelled:
-            return "xmark"
+            "xmark"
         }
     }
-    
+
     private var iconColor: Color {
         switch download.state {
         case .pending:
-            return .orange
+            .orange
         case .downloading:
-            return .blue
+            .blue
         case .paused:
-            return .yellow
+            .yellow
         case .completed:
-            return .green
+            .green
         case .failed:
-            return .red
+            .red
         case .cancelled:
-            return .gray
+            .gray
         }
     }
-    
+
     private var iconBackgroundColor: Color {
         iconColor.opacity(0.15)
     }
-    
+
     private var progressColor: Color {
         iconColor
     }
-    
+
     @ViewBuilder
     private var progressInfoView: some View {
         let progressText = download.formattedProgress
         let timeText = download.formattedTimeRemaining
         let hasTime = download.state == .downloading && !timeText.isEmpty
-        let speedText = download.state == .downloading && download.speed > 0 ? 
+        let speedText = download.state == .downloading && download.speed > 0 ?
             ByteCountFormatter.string(fromByteCount: Int64(download.speed), countStyle: .file) + "/s" : ""
-        
+
         HStack(spacing: 4) {
             Text(progressText)
                 .font(.system(size: 11))
                 .foregroundColor(.secondary)
-            
+
             if hasTime {
                 Text("• \(timeText)")
                     .font(.system(size: 11))
                     .foregroundColor(.secondary)
             }
-            
+
             if !speedText.isEmpty {
                 Text("• \(speedText)")
                     .font(.system(size: 11))
@@ -310,22 +310,22 @@ struct DownloadRowView: View {
             }
         }
     }
-    
+
     private var actionIcon: String {
         switch download.state {
         case .downloading:
-            return "xmark"
+            "xmark"
         case .paused:
-            return "play.fill"
+            "play.fill"
         case .failed:
-            return "arrow.clockwise"
+            "arrow.clockwise"
         case .completed:
-            return "folder"
+            "folder"
         default:
-            return "xmark"
+            "xmark"
         }
     }
-    
+
     private func handleDownloadAction() {
         switch download.state {
         case .downloading:
@@ -341,59 +341,59 @@ struct DownloadRowView: View {
             viewModel.removeDownload(download)
         }
     }
-    
+
     @ViewBuilder
     private var downloadContextMenu: some View {
         if download.state == .completed {
             Button("Open in Finder") {
                 viewModel.openInFinder(download)
             }
-            
+
             Button("Show in Downloads Folder") {
                 viewModel.viewAllDownloads()
             }
-            
+
             Divider()
         }
-        
+
         // Copy URL is available for all downloads
         Button("Copy Download URL") {
             let pasteboard = NSPasteboard.general
             pasteboard.clearContents()
             pasteboard.setString(download.url.absoluteString, forType: .string)
         }
-        
+
         if download.state == .downloading {
             Divider()
-            
+
             Button("Pause Download") {
                 viewModel.pauseDownload(download)
             }
-            
+
             Button("Cancel Download") {
                 viewModel.cancelDownload(download)
             }
         } else if download.state == .paused {
             Divider()
-            
+
             Button("Resume Download") {
                 viewModel.resumeDownload(download)
             }
-            
+
             Button("Cancel Download") {
                 viewModel.cancelDownload(download)
             }
         } else if download.state == .failed {
             Divider()
-            
+
             Button("Retry Download") {
                 // Use the existing download item instead of creating a new one
                 DownloadManager.shared.retryDownload(download.id)
             }
         }
-        
+
         Divider()
-        
+
         Button("Remove from List") {
             viewModel.removeDownload(download)
         }
@@ -413,4 +413,4 @@ public enum DownloadButtonState: Equatable {
 //     DownloadButtonView()
 //         .padding()
 //         .background(.regularMaterial)
-// } 
+// }

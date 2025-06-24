@@ -21,9 +21,9 @@ public final class ABContentBlocker: NSObject, ObservableObject {
     private var registeredWebViews: Set<WeakWebViewWrapper> = []
     private var currentRuleLists: [WKContentRuleList] = [] // Changed to array for multiple rule lists
     private var navigationDelegates: [ObjectIdentifier: ABNavigationDelegate] = [:]
-    
+
     // MARK: - Rule List Limits
-    
+
     private let maxRulesPerList = 25000 // WebKit limit per rule list
     private let maxRuleLists = 10 // Maximum number of rule lists to create
 
@@ -50,7 +50,7 @@ public final class ABContentBlocker: NSObject, ObservableObject {
         currentRuleLists = [ruleList] // Single rule list for backward compatibility
         await applyRuleListsToAllWebViews(currentRuleLists)
     }
-    
+
     /// Update multiple rule lists for all registered WebViews
     public func updateRuleLists(_ ruleLists: [WKContentRuleList]) async {
         currentRuleLists = ruleLists
@@ -98,33 +98,33 @@ public final class ABContentBlocker: NSObject, ObservableObject {
 
         // Get all rules without the 25k limit - we'll split them ourselves
         let allRules = await filterListManager.getAllCompiledRules(excludingDomains: excludedDomains)
-        
+
         logger.info("📝 Generated \(allRules.count) total rules to be split into multiple rule lists")
 
         do {
             let ruleLists = try await createMultipleRuleLists(from: allRules)
             await updateRuleLists(ruleLists)
-            
+
             // Update ABManager with the primary rule list (first one)
             if let primaryRuleList = ruleLists.first {
                 await ABManager.shared.setCompiledRuleList(primaryRuleList)
             }
-            
+
             logger.info("✅ Content blocking rules compiled and applied successfully (\(ruleLists.count) rule lists)")
         } catch {
             logger.error("❌ Failed to compile content rules: \(error)")
             await attemptFallbackRules(filterListManager)
         }
     }
-    
+
     /// Create multiple rule lists from a large set of rules
     private func createMultipleRuleLists(from allRules: [ABContentRule]) async throws -> [WKContentRuleList] {
-        logger.info("🔧 Splitting \(allRules.count) rules into multiple rule lists (max \(self.maxRulesPerList) rules each)")
-        
+        logger.info("🔧 Splitting \(allRules.count) rules into multiple rule lists (max \(maxRulesPerList) rules each)")
+
         // Separate blocking rules from whitelist rules
         var blockingRules: [ABContentRule] = []
         var whitelistRules: [ABContentRule] = []
-        
+
         for rule in allRules {
             if rule.action.type == ABActionType.ignorePreviousRules.rawValue {
                 whitelistRules.append(rule)
@@ -132,26 +132,29 @@ public final class ABContentBlocker: NSObject, ObservableObject {
                 blockingRules.append(rule)
             }
         }
-        
+
         logger.info("📊 Separated \(blockingRules.count) blocking rules and \(whitelistRules.count) whitelist rules")
-        
+
         // Split blocking rules into chunks
         let blockingChunks = blockingRules.chunked(into: maxRulesPerList - whitelistRules.count)
         let totalRuleLists = min(blockingChunks.count, maxRuleLists)
-        
+
         logger.info("🔧 Creating \(totalRuleLists) rule lists with whitelist rules in each")
-        
+
         var compiledRuleLists: [WKContentRuleList] = []
-        
+
         for (index, blockingChunk) in blockingChunks.enumerated() {
             guard index < maxRuleLists else { break }
-            
+
             // Each rule list gets its blocking rules + ALL whitelist rules
             var ruleListRules = blockingChunk
             ruleListRules.append(contentsOf: whitelistRules)
-            
-            logger.info("🔧 Compiling rule list \(index + 1)/\(totalRuleLists) with \(blockingChunk.count) blocking + \(whitelistRules.count) whitelist rules")
-            
+
+            logger
+                .info(
+                    "🔧 Compiling rule list \(index + 1)/\(totalRuleLists) with \(blockingChunk.count) blocking + \(whitelistRules.count) whitelist rules"
+                )
+
             do {
                 let rulesJSON = encodeRules(ruleListRules) ?? "[]"
                 let ruleList = try await compileRuleList(
@@ -165,15 +168,15 @@ public final class ABContentBlocker: NSObject, ObservableObject {
                 // Continue with other rule lists
             }
         }
-        
+
         if compiledRuleLists.isEmpty {
             // throw ABError.compilationFailed("Failed to compile any rule lists")
         }
-        
+
         logger.info("🎯 Successfully created \(compiledRuleLists.count) rule lists with whitelist protection in each")
         return compiledRuleLists
     }
-    
+
     /// Encode rules to JSON string for WebKit
     private func encodeRules(_ rules: [ABContentRule]) -> String? {
         do {
@@ -231,10 +234,10 @@ public final class ABContentBlocker: NSObject, ObservableObject {
                 rulesJSON: minimalRulesJSON
             )
             await updateRuleList(fallbackRuleList)
-            
+
             // Also update ABManager's compiled rule list to stay in sync
             await ABManager.shared.setCompiledRuleList(fallbackRuleList)
-            
+
             logger.info("✅ Minimal content blocking rules applied as fallback")
         } catch {
             logger.error("❌ Even minimal rules failed to compile: \(error)")
@@ -763,8 +766,8 @@ private final class ABMessageHandler: NSObject, WKScriptMessageHandler {
 extension Array {
     /// Split array into chunks of specified size
     func chunked(into size: Int) -> [[Element]] {
-        return stride(from: 0, to: count, by: size).map {
-            Array(self[$0..<Swift.min($0 + size, count)])
+        stride(from: 0, to: count, by: size).map {
+            Array(self[$0 ..< Swift.min($0 + size, count)])
         }
     }
 }
