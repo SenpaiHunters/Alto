@@ -1,23 +1,26 @@
+
 import SwiftUI
 
 struct AltoButton: View {
-    let action: () -> ()
-    let icon: String
-    let active: Bool
-    @State private var isHovered = false
+    @State var isHovered = false
+    var action: () -> ()
+    var icon: String
+    var active: Bool
 
     var body: some View {
         Button(action: action) {
             ZStack {
                 RoundedRectangle(cornerRadius: 5)
-                    .fill(.gray.opacity(isHovered && active ? 0.4 : 0))
+                    .fill(isHovered && active ? .gray.opacity(0.4) : .gray.opacity(0))
                 Image(systemName: icon)
                     .opacity(active ? 1 : 0.3)
             }
             .animation(.bouncy, value: isHovered)
-            .onHover { isHovered = $0 }
+            .onHover { hovered in
+                isHovered = hovered
+            }
         }
         .aspectRatio(1, contentMode: .fit)
-        .buttonStyle(.plain)
+        .buttonStyle(PlainButtonStyle())
     }
 }

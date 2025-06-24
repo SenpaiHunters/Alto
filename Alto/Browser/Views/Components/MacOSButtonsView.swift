@@ -1,25 +1,35 @@
-import AppKit
+
 import SwiftUI
 
 // MARK: - MacButtonsViewNew
 
 struct MacButtonsViewNew: View {
     var body: some View {
-        NSMacButtons()
+        ZStack {
+            NSMacButtons()
+        }
     }
 }
+
+import AppKit
 
 // MARK: - NSMacButtons
 
 struct NSMacButtons: NSViewRepresentable {
-    private let btnTypes: [NSWindow.ButtonType] = [.closeButton, .miniaturizeButton, .zoomButton]
+    var btnTypes: [NSWindow.ButtonType] = [.closeButton, .miniaturizeButton, .zoomButton]
 
     func makeNSView(context: Context) -> NSView {
         let stack = NSStackView()
+        let viewButtons: [NSButton?]
         stack.spacing = 6
 
-        btnTypes.compactMap { NSWindow.standardWindowButton($0, for: .titled) }
-            .forEach(stack.addArrangedSubview)
+        viewButtons = btnTypes.map { NSWindow.standardWindowButton($0, for: .titled) }
+
+        for button in viewButtons {
+            if let button {
+                stack.addArrangedSubview(button)
+            }
+        }
 
         return stack
     }
@@ -30,45 +40,18 @@ struct NSMacButtons: NSViewRepresentable {
 // MARK: - MacButtonsViewModel
 
 @Observable
-final class MacButtonsViewModel {
-    private(set) var buttonState: ButtonState = .idle
-
-    enum ButtonType: CaseIterable {
+class MacButtonsViewModel {
+    let windowPaddingOffset: CGFloat = 2
+    let width: CGFloat = 51
+    let spacing = 7.5
+    var buttonColors: [Color]
+    var isHovered = false
+    var buttonState: ButtonState = .idle
+    let showIcons = true
+    enum ButtonType {
         case close
         case minimize
         case fullscreen
-
-        var fillColor: Color {
-            switch self {
-            case .close: Color(red: 236 / 255, green: 106 / 255, blue: 94 / 255)
-            case .minimize: Color(red: 254 / 255, green: 188 / 255, blue: 46 / 255)
-            case .fullscreen: Color(red: 40 / 255, green: 200 / 255, blue: 65 / 255)
-            }
-        }
-
-        var strokeColor: Color {
-            switch self {
-            case .close: Color(red: 208 / 255, green: 78 / 255, blue: 69 / 255)
-            case .minimize: Color(red: 224 / 255, green: 156 / 255, blue: 21 / 255)
-            case .fullscreen: Color(red: 21 / 255, green: 169 / 255, blue: 31 / 255)
-            }
-        }
-
-        var action: () -> () {
-            switch self {
-            case .close: { NSApp.keyWindow?.close() }
-            case .minimize: { NSApp.keyWindow?.miniaturize(nil) }
-            case .fullscreen: { NSApp.keyWindow?.toggleFullScreen(nil) }
-            }
-        }
-
-        var imageName: String {
-            switch self {
-            case .close: "minus"
-            case .minimize: "xmark"
-            case .fullscreen: "square.split.diagonal.fill"
-            }
-        }
     }
 
     enum ButtonState {
@@ -77,32 +60,90 @@ final class MacButtonsViewModel {
         case hover
     }
 
-    func getButtonColors(for buttonType: ButtonType) -> (fill: Color, stroke: Color) {
-        buttonState != .idle
-            ? (buttonType.fillColor, buttonType.strokeColor)
-            : (Color.primary.opacity(0.2), Color.clear)
+    func getButtonColor(buttonType: ButtonType) -> (Color, Color) {
+        if buttonState != .idle {
+            return (macFillColor(buttonType: buttonType), macStrokeColor(buttonType: buttonType))
+        }
+        return (Color.primary.opacity(0.2), Color.clear)
     }
 
-    func updateHoverState(_ isHovered: Bool) {
-        buttonState = isHovered ? .hover : .idle
+    func macFillColor(buttonType: ButtonType) -> Color {
+        switch buttonType {
+        case .close: Color(red: 236 / 255, green: 106 / 255, blue: 94 / 255)
+        case .minimize: Color(red: 254 / 255, green: 188 / 255, blue: 46 / 255)
+        case .fullscreen: Color(red: 40 / 255, green: 200 / 255, blue: 65 / 255)
+        }
+    }
+
+    func macStrokeColor(buttonType: ButtonType) -> Color {
+        switch buttonType {
+        case .close: Color(red: 208 / 255, green: 78 / 255, blue: 69 / 255)
+        case .minimize: Color(red: 224 / 255, green: 156 / 255, blue: 21 / 255)
+        case .fullscreen: Color(red: 21 / 255, green: 169 / 255, blue: 31 / 255)
+        }
+    }
+
+    func getButtonAction(buttonType: ButtonType) -> () -> () {
+        switch buttonType {
+        case .close: { NSApp.keyWindow?.close() }
+        case .minimize: { NSApp.keyWindow?.miniaturize(nil) }
+        case .fullscreen: { NSApp.keyWindow?.toggleFullScreen(nil) }
+        }
+    }
+
+    func getButtonImage(buttonType: ButtonType) -> String {
+        switch buttonType {
+        case .close: "minus"
+        case .minimize: "xmark"
+        case .fullscreen: "square.split.diagonal.fill"
+        }
+    }
+
+    func hoverChange(hoverState: Bool) {
+        if hoverState {
+            if showIcons {
+                buttonState = .hover
+            } else {
+                buttonState = .active
+            }
+        } else {
+            buttonState = .idle
+        }
+    }
+
+    init() {
+        buttonColors = []
     }
 }
 
 // MARK: - MacButtonsView
 
 struct MacButtonsView: View {
-    private let viewModel = MacButtonsViewModel()
+    let viewModel = MacButtonsViewModel()
 
     var body: some View {
         GeometryReader { geometry in
-            HStack(alignment: .center, spacing: 7.5) {
-                ForEach(MacButtonsViewModel.ButtonType.allCases, id: \.self) { buttonType in
-                    MacButtonView(viewModel: viewModel, buttonType: buttonType)
+            HStack {
+                HStack(alignment: .center, spacing: viewModel.spacing) {
+                    MacButtonView(
+                        viewModel: viewModel,
+                        buttonType: .close
+                    )
+                    MacButtonView(
+                        viewModel: viewModel,
+                        buttonType: .minimize
+                    )
+                    MacButtonView(
+                        viewModel: viewModel,
+                        buttonType: .fullscreen
+                    )
+                }
+                .onHover { Hovered in
+                    viewModel.hoverChange(hoverState: Hovered)
                 }
             }
-            .onHover(perform: viewModel.updateHoverState)
             .frame(height: geometry.size.height)
-            .padding(.leading, geometry.size.height / 3 - 2)
+            .padding(.leading, (geometry.size.height / 3) - viewModel.windowPaddingOffset)
         }
     }
 }
@@ -110,26 +151,26 @@ struct MacButtonsView: View {
 // MARK: - MacButtonView
 
 struct MacButtonView: View {
-    let viewModel: MacButtonsViewModel
-    let buttonType: MacButtonsViewModel.ButtonType
+    var viewModel: MacButtonsViewModel
+    var buttonType: MacButtonsViewModel.ButtonType
 
     var body: some View {
-        Button(action: buttonType.action) {
-            let colors = viewModel.getButtonColors(for: buttonType)
-
+        Button(action: viewModel.getButtonAction(buttonType: buttonType)) {
             if viewModel.buttonState == .idle {
                 Circle()
-                    .fill(colors.fill)
+                    .fill(viewModel.getButtonColor(buttonType: buttonType).0)
                     .frame(width: 12.5, height: 12.5)
             } else {
-                Circle()
-                    .fill(colors.stroke)
-                    .overlay(
-                        Circle()
-                            .inset(by: 0.5)
-                            .fill(colors.fill)
-                    )
-                    .frame(width: 12.5, height: 12.5)
+                ZStack {
+                    Circle()
+                        .fill(viewModel.getButtonColor(buttonType: buttonType).1)
+                        .overlay(
+                            Circle()
+                                .inset(by: 0.5)
+                                .fill(viewModel.getButtonColor(buttonType: buttonType).0)
+                        )
+                    if viewModel.buttonState == .hover {}
+                }.frame(width: 12.5, height: 12.5)
             }
         }
         .buttonStyle(PlainButtonStyle())

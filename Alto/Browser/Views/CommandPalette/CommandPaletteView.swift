@@ -15,16 +15,18 @@ struct CommandPaletteView: View {
 
     var body: some View {
         ZStack {
-            // Dimming Layer
+//            Dimming Layer
             Color.black.opacity(0.25)
                 .ignoresSafeArea()
                 .onTapGesture {
                     viewModel.handleDismiss(altoState: altoState)
                 }
+                .gesture(WindowDragGesture())
 
             VStack {
                 VStack(spacing: 0) {
-                    // Search Bar
+//                    MARK: - Search Bar
+
                     HStack(spacing: 12) {
                         Image(systemName: viewModel.searchIcon)
                             .foregroundStyle(.secondary)
@@ -65,7 +67,7 @@ struct CommandPaletteView: View {
                             .onChange(of: altoState.isShowingCommandPalette) { _, newValue in
                                 viewModel.handlePaletteVisibilityChange(newValue: newValue)
 
-                                // Fixes: Sometimes the Search Bar can become unfocused.
+//                                Fixes: Sometimes the Search Bar can become unfocused.
                                 if newValue {
                                     isSearchFocused = true
                                 }
@@ -77,7 +79,8 @@ struct CommandPaletteView: View {
                         viewModel.resetSelection()
                     }
 
-                    // Suggestions List
+//                    MARK: - Suggestions List
+
                     if !viewModel.searchManager.suggestions.isEmpty {
                         Divider()
                             .frame(height: 0.5)

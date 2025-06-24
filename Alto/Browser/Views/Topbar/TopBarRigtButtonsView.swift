@@ -1,8 +1,6 @@
 import OpenADK
 import SwiftUI
 
-// MARK: - TopBarRigtButtonsView
-
 struct TopBarRigtButtonsView: View {
     @Environment(AltoState.self) private var altoState
 
@@ -14,9 +12,13 @@ struct TopBarRigtButtonsView: View {
                 }
             }, icon: "plus", active: true)
 
+            AltoButton(action: {
+                Alto.shared.spaceManager.newSpace(name: "asdf")
+            }, icon: "rectangle.2.swap", active: true)
+
             // AltoButton(action: {altoState.toggleTopbar()}, icon: "rectangle")
         }
-        .padding(.leading, 40) // Ensures topbar doesnt feel cramped with buttons and tabs
-        .keyboardShortcut(Shortcuts.Tab.newTab)
+        .padding(.leading, 40)
+        .keyboardShortcut(Shortcuts.newTab) // Ensures topbar doesnt feel cramped with buttons and tabs
     }
 }

@@ -8,7 +8,7 @@ class TabViewModel {
     var tab: TabRepresentation
     var draggingViewModel: DropZoneViewModel
 
-    var altoTab: (any TabProtocol)? {
+    var altoTab: GenaricTab? {
         Alto.shared.getTab(id: tab.id)
     }
 

@@ -1,8 +1,18 @@
+//
+
 import OpenADK
 import SwiftUI
 
-struct BrowserView<State: StateProtocol>: View where State == AltoState {
-    var state: State
+struct BrowserView: View {
+    var genaricState: GenaricState
+
+    // If you can find a better solution please make a pr!
+    var state: AltoState? {
+        if let altoState = genaricState as? AltoState {
+            return altoState
+        }
+        return nil
+    }
 
     var body: some View {
         ZStack {

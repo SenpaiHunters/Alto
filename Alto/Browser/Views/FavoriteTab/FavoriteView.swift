@@ -3,9 +3,8 @@ import SwiftUI
 // MARK: - FavoriteView
 
 struct FavoriteView: View {
-    let model: TabViewModel
-    @State private var isHovered = false
-
+    var model: TabViewModel
+    @State var isHovered = false
     var body: some View {
         HStack {
             model.tabIcon
@@ -18,28 +17,30 @@ struct FavoriteView: View {
         .draggable(model.tab) {
             Rectangle()
                 .fill(.red)
+                .opacity(1)
         }
-        .addTapGestures(
-            singleTap: model.handleSingleClick,
-            doubleTap: {}
+        .gesture(
+            TapGesture(count: 2).onEnded {}
+        )
+        .simultaneousGesture(
+            TapGesture().onEnded {
+                model.handleSingleClick()
+            }
         )
         .background(
             Rectangle()
                 .fill(.white.opacity(0.2))
                 .cornerRadius(5)
         )
-        .onHover { _ in }
+        .onHover { _ in
+        }
     }
 }
 
 // MARK: - AltoFavoriteView
 
 struct AltoFavoriteView: View {
-    let model: TabViewModel
-
-    private var isSelected: Bool {
-        model.state.currentSpace?.currentTab?.id == model.tab.id || model.isHovered
-    }
+    var model: TabViewModel
 
     var body: some View {
         HStack {
@@ -49,28 +50,23 @@ struct AltoFavoriteView: View {
         .frame(width: 150)
         .background(
             RoundedRectangle(cornerRadius: 8)
-                .fill(.gray.opacity(isSelected ? 0.4 : 0))
+                .fill((model.state.currentSpace?.currentTab?.id == model.tab.id || model.isHovered) ?
+                    .gray.opacity(0.4) : .gray.opacity(0)
+                )
         )
-        .contentShape(Rectangle())
-        .addTapGestures(
-            singleTap: model.handleSingleClick,
-            doubleTap: model.handleDoubleClick
+        .contentShape(Rectangle()) // Makes the background clickable
+        .gesture(
+            TapGesture(count: 2).onEnded {
+                model.handleDoubleClick()
+            }
+        )
+        .simultaneousGesture(
+            TapGesture().onEnded {
+                model.handleSingleClick()
+            }
         )
         .draggable(model.tab) {
             AltoTabViewDragged(model: model)
         }
-    }
-}
-
-// MARK: - View Extensions
-
-private extension View {
-    func addTapGestures(singleTap: @escaping () -> (), doubleTap: @escaping () -> ()) -> some View {
-        gesture(
-            TapGesture(count: 2).onEnded(doubleTap)
-        )
-        .simultaneousGesture(
-            TapGesture().onEnded(singleTap)
-        )
     }
 }

@@ -1,10 +1,11 @@
+//
 import AppKit
 import OpenADK
 import SwiftUI
 
-// MARK: - NeadleView
+// MARK: - neadleView
 
-struct NeadleView: View {
+struct neadleView: View {
     var isActive: Bool
 
     var body: some View {
@@ -23,10 +24,10 @@ struct NeadleView: View {
     }
 }
 
-// MARK: - HoverZoneView
+// MARK: - hoverZoneView
 
 // This code is crap we need to fix it
-struct HoverZoneView: View {
+struct hoverZoneView: View {
     var model: HoverZoneViewModel
 
     var body: some View {
@@ -42,7 +43,7 @@ struct HoverZoneView: View {
                             model.handleTargeted(targeted)
                         }
 
-                    NeadleView(isActive: model.isTargeted)
+                    neadleView(isActive: model.isTargeted)
                 }
 
                 if model.placement == .start {
@@ -55,7 +56,7 @@ struct HoverZoneView: View {
                         } isTargeted: { targeted in
                             model.handleTargeted(targeted)
                         }
-                    NeadleView(isActive: model.isTargeted)
+                    neadleView(isActive: model.isTargeted)
                 }
             }
             .frame(width: 0)
@@ -64,7 +65,7 @@ struct HoverZoneView: View {
         if model.placement == .end {
             ZStack {
                 HStack {
-                    NeadleView(isActive: model.isTargeted)
+                    neadleView(isActive: model.isTargeted)
                         .offset(CGSize(width: 20, height: 0))
 
                     Spacer()

@@ -2,10 +2,42 @@
 import OpenADK
 import SwiftUI
 
+// MARK: - SettingsView
+
 // What is needed:
 
 struct SettingsView: View {
     @Bindable var preferences = PreferencesManager.shared
+
+    var body: some View {
+        TabView {
+            // General Settings Tab
+            GeneralSettingsView(preferences: preferences)
+                .tabItem {
+                    Label("General", systemImage: "gear")
+                }
+
+            // Privacy & Security Tab
+            PrivacySettingsView(preferences: preferences)
+                .tabItem {
+                    Label("Privacy & Security", systemImage: "shield")
+                }
+
+            // AdBlock Settings Tab
+            AdBlockSettingsView()
+                .tabItem {
+                    Label("AdBlock", systemImage: "shield.lefthalf.filled")
+                }
+        }
+        .frame(minWidth: 600, minHeight: 500)
+        .preferredColorScheme(PreferencesManager.shared.colorScheme)
+    }
+}
+
+// MARK: - GeneralSettingsView
+
+struct GeneralSettingsView: View {
+    @Bindable var preferences: PreferencesManager
 
     var body: some View {
         Form {
@@ -53,8 +85,19 @@ struct SettingsView: View {
                     }
                 }
             }
+        }
+        .padding(20)
+    }
+}
 
-            Section("Privacy") {
+// MARK: - PrivacySettingsView
+
+struct PrivacySettingsView: View {
+    @Bindable var preferences: PreferencesManager
+
+    var body: some View {
+        Form {
+            Section("Search History") {
                 Button("Clear Search History") {
                     SearchManager.shared.clearHistory()
                 }
@@ -65,9 +108,7 @@ struct SettingsView: View {
                     .foregroundColor(.secondary)
             }
         }
-        .padding(10)
-        .frame(maxWidth: 400, maxHeight: 500)
-        .preferredColorScheme(PreferencesManager.shared.colorScheme)
+        .padding(20)
     }
 }
 

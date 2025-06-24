@@ -36,10 +36,15 @@ struct BrowserContentView: View {
                         }
 
                         if currentContent == nil {
-                            Image("Logo")
-                                .opacity(0.5)
-                                .blendMode(.softLight)
-                                .scaleEffect(1.3)
+                            ZStack {
+                                VisualEffectView(material: .hudWindow, state: .active)
+                                    .cornerRadius(10)
+
+                                Image("Logo")
+                                    .opacity(0.5)
+                                    .blendMode(.softLight)
+                                    .scaleEffect(1.3)
+                            }
                         }
                     }
                 }
@@ -121,10 +126,15 @@ struct BrowserContentView: View {
                 }
 
                 if currentContent == nil {
-                    Image("Logo")
-                        .opacity(0.5)
-                        .blendMode(.softLight)
-                        .scaleEffect(1.3)
+                    ZStack {
+                        VisualEffectView(material: .hudWindow, state: .active)
+                            .cornerRadius(10)
+
+                        Image("Logo")
+                            .opacity(0.5)
+                            .blendMode(.softLight)
+                            .scaleEffect(1.3)
+                    }
                 }
             }
             .padding(.leading, 5)

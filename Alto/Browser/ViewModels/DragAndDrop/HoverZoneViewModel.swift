@@ -1,10 +1,4 @@
 //
-//  HoverZoneViewModel.swift
-//  Alto
-//
-//  Created by Kami on 21/06/2025.
-//
-
 import Observation
 import OpenADK
 import SwiftUI
@@ -17,38 +11,61 @@ class HoverZoneViewModel {
         case end
     }
 
-    var tabLocation: TabLocationProtocol
-    let state: AltoState
-    let index: Int
-    private(set) var placement: ZonePlacement
+    var tabLocation: TabLocation
+    var state: AltoState
+    var placement: ZonePlacement
+    var index: Int
+
     var isTargeted = false
 
-    var width: CGFloat { placement == .start ? 20 : 40 }
-    var offset: CGSize { placement == .start ? CGSize(width: 10, height: 0) : .zero }
+    var width: CGFloat {
+        if placement == .start {
+            return 20
+        }
+        return 40
+    }
+
+    var offset: CGSize {
+        if placement == .start {
+            return CGSize(width: 10, height: 0)
+        }
+        return CGSize(width: 0, height: 0)
+    }
 
     init(state: AltoState, tabLocation: TabLocation, index: Int = 0, placement: ZonePlacement = .central) {
         self.state = state
         self.tabLocation = tabLocation
+        self.placement = placement
         self.index = index
-        self.placement = index == tabLocation.tabs.count ? .end : placement
+
+        if index == tabLocation.tabs.count {
+            // print("EQUAL COUNT")
+            self.placement = .end
+        }
     }
 
     func onDrop(droppedTabs: [TabRepresentation], location: CGPoint) -> Bool {
+        /// this goes through each item from the dropped payload
         for tab in droppedTabs {
-            guard let currentLocation = Alto.shared.getTab(id: tab.id)?.location,
-                  let altoTab = Alto.shared.getTab(id: tab.id) else { continue }
+            if let location = Alto.shared.getTab(id: tab.id)?.location {
+                location.removeTab(id: tab.id)
+                Alto.shared.getTab(id: tab.id)?.location = tabLocation
 
-            currentLocation.removeTab(id: tab.id)
-            altoTab.location = tabLocation
+                if tab.index < index {
+                    tabLocation.tabs.insert(TabRepresentation(id: tab.id, index: index - 1), at: index - 1)
+                } else {
+                    tabLocation.tabs.insert(TabRepresentation(id: tab.id, index: index), at: index)
+                }
+            }
+        }
+        tabLocation.tabs = Array(tabLocation.tabs.uniqued())
+        var tabsNew: [TabRepresentation] = []
 
-            let insertIndex = tab.index < index ? index - 1 : index
-            tabLocation.tabs.insert(TabRepresentation(id: tab.id, index: insertIndex), at: insertIndex)
+        for (index, tab) in Array(tabLocation.tabs.enumerated()) {
+            tabsNew.append(TabRepresentation(id: tab.id, containerID: tab.containerID, index: index - 1))
         }
 
-        tabLocation.tabs = Array(tabLocation.tabs.uniqued())
-            .enumerated()
-            .map { TabRepresentation(id: $1.id, containerID: $1.containerID, index: $0 - 1) }
-
+        tabLocation.tabs = tabsNew
         return true
     }
 
