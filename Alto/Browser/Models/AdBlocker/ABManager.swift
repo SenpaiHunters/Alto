@@ -34,6 +34,11 @@ public class ABManager: ObservableObject {
     // MARK: - WebKit Content Rule List
 
     private var compiledRuleList: WKContentRuleList?
+    
+    // MARK: - Initialization State
+    
+    private var isInitialized = false
+    private var initializationTask: Task<Void, Never>?
 
     // File-based storage
     private let settingsURL: URL
@@ -54,15 +59,38 @@ public class ABManager: ObservableObject {
         clearLegacyUserDefaults()
         loadSettings()
 
-        Task {
-            await contentBlocker.compileAndApplyRules()
-        }
+        // Don't start rule compilation automatically - wait for explicit initialization
+        logger.info("🛡️ ABManager basic setup complete, waiting for explicit initialization")
     }
 
     // MARK: - Public Interface
 
     /// Initialize content blocking system
     public func initializeContentBlocking() async {
+        // Prevent duplicate initialization
+        if isInitialized {
+            logger.info("⏭️ Content blocking already initialized, skipping")
+            return
+        }
+        
+        // If there's already an initialization task running, wait for it
+        if let existingTask = initializationTask {
+            logger.info("⏳ Content blocking initialization already in progress, waiting...")
+            await existingTask.value
+            return
+        }
+        
+        // Start new initialization task
+        initializationTask = Task {
+            await performInitialization()
+        }
+        
+        await initializationTask?.value
+    }
+    
+    private func performInitialization() async {
+        guard !isInitialized else { return }
+        
         logger.info("🛡️ Initializing content blocking system...")
 
         do {
@@ -70,11 +98,14 @@ public class ABManager: ObservableObject {
 
             // Compile rules
             await compileContentRules()
-
+            
+            isInitialized = true
             logger.info("✅ Content blocking system initialized successfully")
         } catch {
             logger.error("❌ Failed to initialize content blocking: \(error)")
         }
+        
+        initializationTask = nil
     }
 
     /// Apply content blocking to a WebView
@@ -125,7 +156,7 @@ public class ABManager: ObservableObject {
             }
         }
 
-        logger.info("🔄 Ad blocking toggled: \(isself.Enabled ? "ON" : "OFF")")
+        logger.info("🔄 Ad blocking toggled: \(self.isEnabled ? "ON" : "OFF")")
 
         // Trigger UI update
         objectWillChange.send()
@@ -143,7 +174,7 @@ public class ABManager: ObservableObject {
         saveSettings()
 
         Task {
-            await compileContentRules()
+            await contentBlocker.compileAndApplyRules()
         }
 
         logger.info("✅ Added \(cleanDomain) to whitelist")
@@ -159,7 +190,7 @@ public class ABManager: ObservableObject {
         saveSettings()
 
         Task {
-            await compileContentRules()
+            await contentBlocker.compileAndApplyRules()
         }
 
         logger.info("🗑️ Removed \(cleanDomain) from whitelist")
@@ -184,7 +215,7 @@ public class ABManager: ObservableObject {
 
         do {
             await filterListManager.updateAllFilterLists()
-            await compileContentRules()
+            await contentBlocker.compileAndApplyRules()
             logger.info("✅ Filter lists updated successfully")
         } catch {
             logger.error("❌ Failed to update filter lists: \(error)")
@@ -196,45 +227,16 @@ public class ABManager: ObservableObject {
         compiledRuleList
     }
 
+    /// Set the compiled rule list (used by ABContentBlocker to keep in sync)
+    public func setCompiledRuleList(_ ruleList: WKContentRuleList) async {
+        compiledRuleList = ruleList
+    }
+
     // MARK: - Private Methods
 
     private func compileContentRules() async {
-        do {
-            let rules = await filterListManager.getCompiledRules(excludingDomains: whitelistedDomains)
-            logger.info("🔧 Attempting to compile \(rules.count) characters of rules")
-
-            let ruleList = try await WKContentRuleListStore.default().compileContentRuleList(
-                forIdentifier: "AltoBlockRules",
-                encodedContentRuleList: rules
-            )
-
-            compiledRuleList = ruleList
-            await contentBlocker.updateRuleList(ruleList!)
-
-            logger.info("✅ Content rules compiled successfully")
-        } catch {
-            logger.error("❌ Failed to compile content rules: \(error)")
-            logger.info("🔄 Attempting fallback with minimal rules...")
-
-            // Fallback to minimal rules
-            do {
-                let minimalRulesJSON = await filterListManager.getMinimalRules()
-                logger.info("🔧 Attempting to compile minimal rules: \(minimalRulesJSON.count) characters")
-
-                let fallbackRuleList = try await WKContentRuleListStore.default().compileContentRuleList(
-                    forIdentifier: "AltoBlockRules_minimal",
-                    encodedContentRuleList: minimalRulesJSON
-                )
-
-                compiledRuleList = fallbackRuleList
-                await contentBlocker.updateRuleList(fallbackRuleList!)
-                logger.info("✅ Minimal content blocking rules applied as fallback")
-
-            } catch {
-                logger.error("❌ Even minimal rules failed to compile: \(error)")
-                logger.info("🚨 AdBlock system running without content rules - JavaScript blocking only")
-            }
-        }
+        // Delegate to ABContentBlocker to avoid duplication
+        await contentBlocker.compileAndApplyRules()
     }
 
     // MARK: - Settings Persistence
@@ -289,7 +291,7 @@ public class ABManager: ObservableObject {
 
             logger
                 .info(
-                    "📋 Loaded settings from file: enabled=\(isself.Enabled), blocked=\(toself.talBlockedRequests), whitelist=\(whself.itelistedDomains.count)"
+                    "📋 Loaded settings from file: enabled=\(self.isEnabled), blocked=\(self.totalBlockedRequests), whitelist=\(self.whitelistedDomains.count)"
                 )
         } catch {
             logger.error("❌ Failed to load settings from file: \(error)")

@@ -117,6 +117,18 @@ public final class ABFilterListManager: ObservableObject {
 
     /// Get compiled rules as JSON string for WebKit
     public func getCompiledRules(excludingDomains: Set<String> = []) async -> String {
+        let allRules = await getAllCompiledRules(excludingDomains: excludingDomains)
+        
+        // Apply the old 25k limit for backward compatibility
+        let limitedRules = Array(allRules.prefix(totalMaxRules))
+        
+        let result = encodeRules(limitedRules) ?? "[]"
+        logger.info("✅ Compiled \(limitedRules.count) rules (limited from \(allRules.count) total)")
+        return result
+    }
+    
+    /// Get all compiled rules as objects (without 25k limit for multi-list support)
+    public func getAllCompiledRules(excludingDomains: Set<String> = []) async -> [ABContentRule] {
         // Start with built-in blocking rules first
         var allRules = getBuiltInBlockingRules()
         logger.info("📝 Added \(allRules.count) built-in blocking rules")
@@ -131,9 +143,15 @@ public final class ABFilterListManager: ObservableObject {
 
         guard !enabledLists.isEmpty else {
             logger.info("✅ No external filter lists enabled - using built-in rules only")
-            let result = encodeRules(allRules) ?? "[]"
-            logger.debug("📋 Final rules JSON (built-in only): \(result)")
-            return result
+            
+            // Add site-specific whitelist rules at the END (they use ignore-previous-rules)
+            let youtubeRules = getYouTubeWhitelistRules()
+            let redditRules = getRedditWhitelistRules()
+            allRules.append(contentsOf: youtubeRules)
+            allRules.append(contentsOf: redditRules)
+            logger.info("📝 Added \(youtubeRules.count) YouTube + \(redditRules.count) Reddit whitelist rules (total: \(allRules.count))")
+            
+            return allRules
         }
 
         for filterList in enabledLists {
@@ -143,44 +161,23 @@ public final class ABFilterListManager: ObservableObject {
                 logger.info("📥 Downloaded \(filterContent.count) characters from \(filterList.name)")
 
                 let rules = parseAdBlockFilters(filterContent, excludingDomains: excludingDomains)
-                let limitedRules = Array(rules.prefix(maxRulesPerList))
-                allRules.append(contentsOf: limitedRules)
-
-                logger
-                    .info(
-                        "📝 Added \(limitedRules.count) rules from \(filterList.name) (parsed: \(rules.count), total now: \(allRules.count))"
-                    )
-
-                if allRules.count >= totalMaxRules {
-                    logger.warning("⚠️ Reached maximum rule limit (\(self.totalMaxRules)). Stopping rule compilation.")
-                    break
-                }
+                allRules.append(contentsOf: rules) // Don't limit per-list anymore
+                
+                logger.info("📝 Added \(rules.count) rules from \(filterList.name) (total now: \(allRules.count))")
             } catch {
                 logger.error("❌ Failed to get filter list \(filterList.name): \(error)")
             }
         }
 
-        if allRules.count > totalMaxRules {
-            allRules = Array(allRules.prefix(totalMaxRules))
-            logger.warning("⚠️ Trimmed rules to \(self.totalMaxRules) to stay within WebKit limits")
-        }
-
-        // Add YouTube whitelist rules at the END (they use ignore-previous-rules to override blocking)
+        // Add site-specific whitelist rules at the END (they use ignore-previous-rules to override blocking)
         let youtubeRules = getYouTubeWhitelistRules()
+        let redditRules = getRedditWhitelistRules()
         allRules.append(contentsOf: youtubeRules)
-        logger.info("📝 Added \(youtubeRules.count) YouTube whitelist rules at end (total: \(allRules.count))")
+        allRules.append(contentsOf: redditRules)
+        logger.info("📝 Added \(youtubeRules.count) YouTube + \(redditRules.count) Reddit whitelist rules at end (total: \(allRules.count))")
 
-        let compiledRules = encodeRules(allRules) ?? encodeRules(getBuiltInBlockingRules()) ?? "[]"
-        logger.info("✅ Compiled \(allRules.count) rules from \(enabledLists.count) filter lists + YouTube whitelist")
-
-        // Log sample of final rules for debugging
-        if compiledRules.count < 2000 {
-            logger.debug("📋 Final compiled rules: \(compiledRules)")
-        } else {
-            logger.debug("📋 Final compiled rules preview: \(String(compiledRules.prefix(1000)))...")
-        }
-
-        return compiledRules
+        logger.info("✅ Generated \(allRules.count) total rules from \(enabledLists.count) filter lists + site whitelists")
+        return allRules
     }
 
     private func encodeRules(_ rules: [ABContentRule]) -> String? {
@@ -199,26 +196,35 @@ public final class ABFilterListManager: ObservableObject {
         logger.info("🏗️ Building YouTube whitelist rules...")
 
         let youtubeWhitelistRules: [(String, [String], String)] = [
-            // Core YouTube domains
+            // Core YouTube domains (broader patterns)
             (".*ytimg\\.com.*", ABResourceType.allWebKitTypes, "YouTube Images (whitelist)"),
             (".*yt3\\.ggpht\\.com.*", ABResourceType.allWebKitTypes, "YouTube Thumbnails (whitelist)"),
             (".*yt4\\.ggpht\\.com.*", ABResourceType.allWebKitTypes, "YouTube Thumbnails v4 (whitelist)"),
             (".*googlevideo\\.com.*", ABResourceType.allWebKitTypes, "YouTube Videos (whitelist)"),
 
-            // YouTube API and internal
+            // YouTube API and internal (more comprehensive)
             (".*youtube\\.com\\/api.*", ABResourceType.allWebKitTypes, "YouTube API (whitelist)"),
             (".*youtube\\.com\\/youtubei.*", ABResourceType.allWebKitTypes, "YouTube Internal API (whitelist)"),
+            (".*youtube\\.com\\/ptracking.*", ABResourceType.allWebKitTypes, "YouTube Analytics (whitelist)"),
             (".*youtube\\.com\\/generate_204.*", ABResourceType.allWebKitTypes, "YouTube Analytics (whitelist)"),
 
-            // YouTube static assets - broad patterns to catch all variations
+            // YouTube static assets - MUCH broader patterns to catch all variations
             (".*youtube\\.com\\/s\\/.*", ABResourceType.allWebKitTypes, "YouTube /s/ Assets (whitelist)"),
             (".*youtube\\.com\\/yts\\/.*", ABResourceType.allWebKitTypes, "YouTube /yts/ Assets (whitelist)"),
+            (".*youtube\\.com.*cssbin.*", ABResourceType.allWebKitTypes, "YouTube CSS Bins (whitelist)"),
+            (".*youtube\\.com.*\\/js\\/.*", ABResourceType.allWebKitTypes, "YouTube JS Assets (whitelist)"),
+            (".*youtube\\.com.*\\/ss\\/.*", ABResourceType.allWebKitTypes, "YouTube SS Assets (whitelist)"),
 
-            // Specific file types
+            // Essential YouTube file types (specific patterns to override blocking)
             (".*youtube\\.com.*\\.js.*", [ABResourceType.script.rawValue], "YouTube JS Files (whitelist)"),
             (".*youtube\\.com.*\\.css.*", [ABResourceType.styleSheet.rawValue], "YouTube CSS Files (whitelist)"),
+            (".*youtube\\.com.*kevlar.*", ABResourceType.allWebKitTypes, "YouTube Kevlar Framework (whitelist)"),
 
-            // YouTube subdomains only (not too broad)
+            // Google services that YouTube depends on
+            (".*gstatic\\.com.*", ABResourceType.allWebKitTypes, "Google Static Assets (whitelist)"),
+            (".*googleapis\\.com.*", ABResourceType.allWebKitTypes, "Google APIs (whitelist)"),
+
+            // YouTube subdomains (keep specific to YouTube)
             (".*\\.youtube\\.com.*", ABResourceType.allWebKitTypes, "YouTube Subdomains (whitelist)")
         ]
 
@@ -233,6 +239,49 @@ public final class ABFilterListManager: ObservableObject {
         }
 
         logger.info("✅ Built \(rules.count) YouTube whitelist rules")
+        return rules
+    }
+
+    private func getRedditWhitelistRules() -> [ABContentRule] {
+        logger.info("🏗️ Building Reddit whitelist rules...")
+
+        let redditWhitelistRules: [(String, [String], String)] = [
+            // Core Reddit domains and assets
+            (".*reddit\\.com.*", ABResourceType.allWebKitTypes, "Reddit Main Domain (whitelist)"),
+            (".*redditstatic\\.com.*", ABResourceType.allWebKitTypes, "Reddit Static Assets (whitelist)"),
+            (".*redd\\.it.*", ABResourceType.allWebKitTypes, "Reddit Short Links (whitelist)"),
+            
+            // Reddit API endpoints
+            (".*reddit\\.com\\/api.*", ABResourceType.allWebKitTypes, "Reddit API (whitelist)"),
+            (".*reddit\\.com\\/svc.*", ABResourceType.allWebKitTypes, "Reddit Services (whitelist)"),
+            
+            // Reddit static resources
+            (".*reddit\\.com.*\\.js.*", [ABResourceType.script.rawValue], "Reddit JS Files (whitelist)"),
+            (".*reddit\\.com.*\\.css.*", [ABResourceType.styleSheet.rawValue], "Reddit CSS Files (whitelist)"),
+            (".*redditstatic\\.com.*\\.js.*", [ABResourceType.script.rawValue], "Reddit Static JS (whitelist)"),
+            (".*redditstatic\\.com.*\\.css.*", [ABResourceType.styleSheet.rawValue], "Reddit Static CSS (whitelist)"),
+            
+            // Reddit Shreddit (new Reddit) components
+            (".*redditstatic\\.com\\/shreddit.*", ABResourceType.allWebKitTypes, "Reddit Shreddit Components (whitelist)"),
+            
+            // Reddit images and media
+            (".*i\\.redd\\.it.*", ABResourceType.allWebKitTypes, "Reddit Images (whitelist)"),
+            (".*v\\.redd\\.it.*", ABResourceType.allWebKitTypes, "Reddit Videos (whitelist)"),
+            (".*preview\\.redd\\.it.*", ABResourceType.allWebKitTypes, "Reddit Preview Images (whitelist)"),
+            (".*external-preview\\.redd\\.it.*", ABResourceType.allWebKitTypes, "Reddit External Previews (whitelist)")
+        ]
+
+        var rules: [ABContentRule] = []
+        for (pattern, resourceTypes, description) in redditWhitelistRules {
+            let rule = ABContentRule(
+                trigger: ABTrigger(urlFilter: pattern, resourceType: resourceTypes),
+                action: ABAction(type: ABActionType.ignorePreviousRules.rawValue)
+            )
+            rules.append(rule)
+            logger.debug("✅ Reddit whitelist rule (ignore-previous): \(description)")
+        }
+
+        logger.info("✅ Built \(rules.count) Reddit whitelist rules")
         return rules
     }
 
@@ -427,33 +476,33 @@ public final class ABFilterListManager: ObservableObject {
                     case "document": modifierTypes = [ABResourceType.document.rawValue]
                     default:
                         if !cleanModifier.isEmpty {
-                            logger
-                                .debug(
-                                    "❓ Unknown modifier: \(cleanModifier) in rule: \(String(originalPattern.prefix(50)))"
-                                )
+                            // logger
+                            //     .debug(
+                            //         "❓ Unknown modifier: \(cleanModifier) in rule: \(String(originalPattern.prefix(50)))"
+                            //     )
                         }
                     }
                 }
 
                 if !modifierTypes.isEmpty {
                     resourceTypes = modifierTypes
-                    logger
-                        .debug(
-                            "🎯 Resource-specific rule: \(resourceTypes.joined(separator: ",")) for \(String(originalPattern.prefix(30)))"
-                        )
+                    // logger
+                    //     .debug(
+                    //         "🎯 Resource-specific rule: \(resourceTypes.joined(separator: ",")) for \(String(originalPattern.prefix(30)))"
+                    //     )
                 }
             }
         }
 
         // Log potentially problematic rules for YouTube
         if originalPattern.lowercased().contains("youtube") || originalPattern.lowercased().contains("ytimg") {
-            logger.warning("🎥 YouTube-related rule: \(originalPattern) -> \(pattern)")
+            // logger.warning("🎥 YouTube-related rule: \(originalPattern) -> \(pattern)")
         }
 
         // Log image-related rules that might affect thumbnails
         if resourceTypes.contains(ABResourceType.image.rawValue),
            originalPattern.contains("img") || originalPattern.contains("thumb") {
-            logger.warning("🖼️ Image rule that might affect thumbnails: \(originalPattern)")
+            // logger.warning("🖼️ Image rule that might affect thumbnails: \(originalPattern)")
         }
 
         return ABContentRule(
@@ -477,17 +526,17 @@ public final class ABFilterListManager: ObservableObject {
         // Log potentially problematic cosmetic rules
         if selector.contains("video") || selector.contains("player") || selector.contains("thumb") || selector
             .contains("img") {
-            logger.warning("🎨 Cosmetic rule that might affect media: \(line)")
+            // logger.warning("🎨 Cosmetic rule that might affect media: \(line)")
         }
 
         if selector.contains("youtube") || domainPart.contains("youtube") {
             logger.warning("🎥 YouTube cosmetic rule: \(line)")
         }
 
-        logger
-            .debug(
-                "🎨 Cosmetic rule: \(domainPart.isEmpty ? "global" : domainPart) -> hide '\(String(selector.prefix(30)))'"
-            )
+        // logger
+        //     .debug(
+        //         "🎨 Cosmetic rule: \(domainPart.isEmpty ? "global" : domainPart) -> hide '\(String(selector.prefix(30)))'"
+        //     )
 
         // Handle domain-specific rules
         var trigger: ABTrigger
@@ -673,14 +722,16 @@ public final class ABFilterListManager: ObservableObject {
 
         var minimalRules = basicBlockingRules
 
-        // Add YouTube whitelist rules at the end (they use ignore-previous-rules)
+        // Add site-specific whitelist rules at the end (they use ignore-previous-rules)
         let youtubeRules = getYouTubeWhitelistRules()
+        let redditRules = getRedditWhitelistRules()
         minimalRules.append(contentsOf: youtubeRules)
+        minimalRules.append(contentsOf: redditRules)
 
         let result = encodeRules(minimalRules) ?? "[]"
         logger
             .info(
-                "🚨 Using minimal rules fallback (\(minimalRules.count) rules: \(basicBlockingRules.count) blocking + \(youtubeRules.count) whitelist)"
+                "🚨 Using minimal rules fallback (\(minimalRules.count) rules: \(basicBlockingRules.count) blocking + \(youtubeRules.count) YouTube + \(redditRules.count) Reddit whitelist)"
             )
         return result
     }

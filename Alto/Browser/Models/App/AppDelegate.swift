@@ -19,6 +19,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             print("✅ AdBlocker initialized successfully")
         }
 
+        // Initialize Download Manager
+        print("📥 Initializing Download Manager...")
+        _ = DownloadManager.shared
+        _ = DownloadIntegration.shared
+        print("✅ Download Manager initialized successfully")
+
         // Set up notification listener for new WebViews
         setupAdBlockNotificationListener()
 

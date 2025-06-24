@@ -101,6 +101,9 @@ public final class ABIntegration: NSObject {
     private func applyCompiledContentRules(to webView: WKWebView) async {
         let webViewURL = webView.url?.absoluteString ?? "no URL"
 
+        // First ensure ABManager is properly initialized
+        await abManager.initializeContentBlocking()
+
         if let ruleList = await abManager.getCurrentCompiledRuleList() {
             logger.info("🛡️ Applying compiled content rules to WebView: \(webViewURL)")
 
@@ -110,11 +113,8 @@ public final class ABIntegration: NSObject {
             await webView.configuration.userContentController.add(ruleList)
             logger.info("✅ Content rules applied to WebView: \(webViewURL)")
         } else {
-            logger.warning("⚠️ No compiled content rules available for WebView: \(webViewURL)")
-            logger.info("🔄 Triggering rule compilation...")
-            Task {
-                await abManager.contentBlocker.compileAndApplyRules()
-            }
+            logger.warning("⚠️ No compiled content rules available for WebView after initialization: \(webViewURL)")
+            logger.info("🚨 AdBlock system may be running in fallback mode (JavaScript blocking only)")
         }
     }
 
