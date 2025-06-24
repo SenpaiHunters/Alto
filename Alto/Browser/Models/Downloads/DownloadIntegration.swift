@@ -224,22 +224,6 @@ public class DownloadIntegration: NSObject {
             self?.setupDownloadHandling(for: webView)
         }
 
-        // Listen for download requests from WebViews
-        NotificationCenter.default.addObserver(
-            forName: NSNotification.Name("AltoDownloadRequested"),
-            object: nil,
-            queue: .main
-        ) { [weak self] notification in
-            guard let userInfo = notification.userInfo else { return }
-
-            if let urlString = userInfo["url"] as? String,
-               let url = URL(string: urlString) {
-                let filename = userInfo["filename"] as? String
-                self?.logger.info("🚀 Download: Received download request for \(filename ?? "unknown")")
-                self?.downloadManager.startDownload(from: url, filename: filename)
-            }
-        }
-
         logger.info("👂 Download: Notification listeners registered")
     }
 

@@ -8,6 +8,7 @@
 import Foundation
 import OSLog
 import WebKit
+import CryptoKit
 
 // MARK: - ABManager
 
@@ -31,14 +32,32 @@ public class ABManager: ObservableObject {
     public let filterListManager = ABFilterListManager()
     public let statisticsManager = ABStatistics()
 
-    // MARK: - WebKit Content Rule List
-
+    // MARK: - WebKit Content Rules State
+    
     private var compiledRuleList: WKContentRuleList?
+    private var lastRuleCompilationHash: String?
+    private var isInitialized = false
+
+    // MARK: - Settings Storage
+
+    private let settingsFileURL: URL
+    private let settingsKey = "ABManagerSettings"
+    
+    // MARK: - Rule Compilation Cache
+    
+    private var cachedRuleListsKey: String
+    private var ruleHashKey: String
 
     // MARK: - Initialization State
 
-    private var isInitialized = false
-    private var initializationTask: Task<(), Never>?
+    private enum InitializationState {
+        case notInitialized
+        case initializing
+        case initialized
+        case failed
+    }
+
+    private var initializationState: InitializationState = .notInitialized
 
     // File-based storage
     private let settingsURL: URL
@@ -49,6 +68,20 @@ public class ABManager: ObservableObject {
         let appSupportDir = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
         let adBlockDir = appSupportDir.appendingPathComponent("Alto/AdBlock")
         settingsURL = adBlockDir.appendingPathComponent("Settings.json")
+        settingsFileURL = settingsURL
+
+        // Generate or load random cache keys
+        let cacheKeysURL = adBlockDir.appendingPathComponent("CacheKeys.json")
+        if let data = try? Data(contentsOf: cacheKeysURL),
+           let keys = try? JSONDecoder().decode(CacheKeys.self, from: data) {
+            cachedRuleListsKey = keys.cachedRuleListsKey
+            ruleHashKey = keys.ruleHashKey
+        } else {
+            // Generate new random keys
+            cachedRuleListsKey = "CachedRuleLists_\(UUID().uuidString)"
+            ruleHashKey = "RuleCompilationHash_\(UUID().uuidString)"
+            // Save keys after all properties are initialized
+        }
 
         // Create directory if needed
         try? fileManager.createDirectory(at: adBlockDir, withIntermediateDirectories: true)
@@ -59,7 +92,14 @@ public class ABManager: ObservableObject {
         clearLegacyUserDefaults()
         loadSettings()
 
-        // Don't start rule compilation automatically - wait for explicit initialization
+        // Load cached rule hash for cache validation
+        loadCachedRuleHash()
+        
+        // Save cache keys if they were newly generated
+        if !fileManager.fileExists(atPath: cacheKeysURL.path) {
+            saveCacheKeys(to: cacheKeysURL)
+        }
+        
         logger.info("🛡️ ABManager basic setup complete, waiting for explicit initialization")
     }
 
@@ -67,45 +107,35 @@ public class ABManager: ObservableObject {
 
     /// Initialize content blocking system
     public func initializeContentBlocking() async {
-        // Prevent duplicate initialization
-        if isInitialized {
-            logger.info("⏭️ Content blocking already initialized, skipping")
+        if initializationState != .notInitialized {
+            logger.debug("🔄 Content blocking already initialized, skipping")
             return
         }
-
-        // If there's already an initialization task running, wait for it
-        if let existingTask = initializationTask {
-            logger.info("⏳ Content blocking initialization already in progress, waiting...")
-            await existingTask.value
-            return
-        }
-
-        // Start new initialization task
-        initializationTask = Task {
-            await performInitialization()
-        }
-
-        await initializationTask?.value
-    }
-
-    private func performInitialization() async {
-        guard !isInitialized else { return }
-
+        
+        initializationState = .initializing
         logger.info("🛡️ Initializing content blocking system...")
-
-        do {
-            // Filter lists are loaded during ABFilterListManager initialization
-
-            // Compile rules
-            await compileContentRules()
-
-            isInitialized = true
-            logger.info("✅ Content blocking system initialized successfully")
-        } catch {
-            logger.error("❌ Failed to initialize content blocking: \(error)")
+        
+        // Check if we have cached compiled rules first
+        let hasRules = await contentBlocker.hasCompiledRules()
+        let isCacheValid = await isCacheValid()
+        
+        if hasRules && isCacheValid {
+            logger.info("📋 Using cached compiled rules")
+            initializationState = .initialized
+            return
         }
-
-        initializationTask = nil
+        
+        // Need to compile new rules
+        logger.info("🔍 No compiled rules found, need to compile")
+        
+        do {
+            await contentBlocker.compileAndApplyRules()
+            initializationState = .initialized
+            logger.info("✅ AdBlocker initialized successfully")
+        } catch {
+            logger.error("❌ Failed to initialize AdBlocker: \(error)")
+            initializationState = .failed
+        }
     }
 
     /// Apply content blocking to a WebView
@@ -156,7 +186,7 @@ public class ABManager: ObservableObject {
             }
         }
 
-        logger.info("🔄 Ad blocking toggled: \(isEnabled ? "ON" : "OFF")")
+        logger.info("🔄 Ad blocking toggled: \(self.isEnabled ? "ON" : "OFF")")
 
         // Trigger UI update
         objectWillChange.send()
@@ -237,6 +267,134 @@ public class ABManager: ObservableObject {
     private func compileContentRules() async {
         // Delegate to ABContentBlocker to avoid duplication
         await contentBlocker.compileAndApplyRules()
+        
+        // Cache the rule hash for future cache validation
+        await cacheCurrentRuleHash()
+    }
+
+    /// Check if cached rules are still valid (no filter list changes)
+    private func canUseCachedRules() async -> Bool {
+        // Check if we have existing compiled rule lists in contentBlocker
+        let hasCompiledRules = await contentBlocker.hasCompiledRules()
+        guard hasCompiledRules else {
+            logger.info("🔍 No compiled rules found, need to compile")
+            return false
+        }
+        
+        // Generate hash of current filter configuration
+        let currentHash = await calculateCurrentRuleHash()
+        
+        // Check if hash matches cached hash
+        if let cachedHash = lastRuleCompilationHash, currentHash == cachedHash {
+            logger.info("✅ Rule configuration unchanged (hash: \(currentHash.prefix(8))...), using cached rules")
+            return true
+        } else {
+            logger.info("🔄 Rule configuration changed (old: \(self.lastRuleCompilationHash?.prefix(8) ?? "none"), new: \(currentHash.prefix(8))), need to recompile")
+            return false
+        }
+    }
+    
+    /// Calculate hash representing current rule configuration
+    private func calculateCurrentRuleHash() async -> String {
+        // Include factors that would require recompilation:
+        // 1. Enabled filter lists and their update times
+        // 2. Whitelist domains
+        // 3. Built-in rule configuration
+        
+        var hashComponents: [String] = []
+        
+        // Filter list fingerprint
+        let filterLists = await filterListManager.getEnabledFilterLists()
+        for filterList in filterLists {
+            // Include name, URL, and last update time
+            let component = "\(filterList.name)|\(filterList.url)|\(filterList.lastUpdated?.timeIntervalSince1970 ?? 0)"
+            hashComponents.append(component)
+        }
+        
+        // Whitelist domains
+        let sortedWhitelist = Array(whitelistedDomains).sorted()
+        hashComponents.append("whitelist:\(sortedWhitelist.joined(separator:","))")
+        
+        // Built-in rules version (increment this if built-in rules change)
+        hashComponents.append("builtin:v1.0")
+        
+        // Create combined hash
+        let combined = hashComponents.joined(separator: "|")
+        let data = combined.data(using: .utf8) ?? Data()
+        let hash = SHA256.hash(data: data)
+        return hash.compactMap { String(format: "%02x", $0) }.joined()
+    }
+    
+    /// Cache the current rule hash for future validation
+    public func cacheCurrentRuleHash() async {
+        lastRuleCompilationHash = await calculateCurrentRuleHash()
+        
+        // Persist to UserDefaults for next app launch
+        UserDefaults.standard.set(lastRuleCompilationHash, forKey: ruleHashKey)
+        logger.info("💾 Cached rule hash: \(self.lastRuleCompilationHash?.prefix(8) ?? "none")...")
+    }
+    
+    /// Load cached rule hash from UserDefaults
+    private func loadCachedRuleHash() {
+        lastRuleCompilationHash = UserDefaults.standard.string(forKey: ruleHashKey)
+        if let hash = lastRuleCompilationHash {
+            logger.info("📁 Loaded cached rule hash: \(hash.prefix(8))...")
+        }
+    }
+
+    /// Check if current cache is valid
+    private func isCacheValid() async -> Bool {
+        guard let cachedHash = lastRuleCompilationHash else {
+            logger.debug("🔍 No cached hash found")
+            return false
+        }
+        
+        let currentHash = await calculateCurrentRuleHash()
+        let isValid = cachedHash == currentHash
+        
+        if isValid {
+            logger.info("✅ Cache is valid, using cached rules")
+        } else {
+            logger.info("❌ Cache is invalid, need to recompile")
+            logger.debug("🔍 Cached hash: \(cachedHash.prefix(8))...")
+            logger.debug("🔍 Current hash: \(currentHash.prefix(8))...")
+        }
+        
+        return isValid
+    }
+
+    // MARK: - Cache Key Management
+    
+    private struct CacheKeys: Codable {
+        let cachedRuleListsKey: String
+        let ruleHashKey: String
+    }
+    
+    private func loadCacheKeys(from url: URL) -> CacheKeys? {
+        guard FileManager.default.fileExists(atPath: url.path) else { return nil }
+        
+        do {
+            let data = try Data(contentsOf: url)
+            return try JSONDecoder().decode(CacheKeys.self, from: data)
+        } catch {
+            logger.error("❌ Failed to load cache keys: \(error)")
+            return nil
+        }
+    }
+    
+    private func saveCacheKeys(to url: URL) {
+        let keys = CacheKeys(
+            cachedRuleListsKey: cachedRuleListsKey,
+            ruleHashKey: ruleHashKey
+        )
+        
+        do {
+            let data = try JSONEncoder().encode(keys)
+            try data.write(to: url, options: .atomic)
+            logger.info("💾 Saved random cache keys")
+        } catch {
+            logger.error("❌ Failed to save cache keys: \(error)")
+        }
     }
 
     // MARK: - Settings Persistence
@@ -291,7 +449,7 @@ public class ABManager: ObservableObject {
 
             logger
                 .info(
-                    "📋 Loaded settings from file: enabled=\(isEnabled), blocked=\(totalBlockedRequests), whitelist=\(whitelistedDomains.count)"
+                    "📋 Loaded settings from file: enabled=\(self.isEnabled), blocked=\(self.totalBlockedRequests), whitelist=\(self.whitelistedDomains.count)"
                 )
         } catch {
             logger.error("❌ Failed to load settings from file: \(error)")

@@ -100,22 +100,74 @@ public final class ABIntegration: NSObject {
     /// Apply already-compiled content rules to a WebView
     private func applyCompiledContentRules(to webView: WKWebView) async {
         let webViewURL = webView.url?.absoluteString ?? "no URL"
+        
+        // Skip ad blocking for download URLs
+        if let url = webView.url, isDownloadURL(url) {
+            logger.info("🚀 Skipping ad blocking for download URL: \(webViewURL)")
+            return
+        }
 
         // First ensure ABManager is properly initialized
         await abManager.initializeContentBlocking()
 
-        if let ruleList = await abManager.getCurrentCompiledRuleList() {
-            logger.info("🛡️ Applying compiled content rules to WebView: \(webViewURL)")
+        let ruleLists = await abManager.contentBlocker.getCurrentCompiledRuleLists()
+        if !ruleLists.isEmpty {
+            logger.info("🛡️ Applying \(ruleLists.count) compiled content rule lists to WebView: \(webViewURL)")
 
             await webView.configuration.userContentController.removeAllContentRuleLists()
             logger.debug("🗑️ Cleared existing rules from WebView")
 
-            await webView.configuration.userContentController.add(ruleList)
+            for ruleList in ruleLists {
+                await webView.configuration.userContentController.add(ruleList)
+            }
             logger.info("✅ Content rules applied to WebView: \(webViewURL)")
         } else {
             logger.warning("⚠️ No compiled content rules available for WebView after initialization: \(webViewURL)")
             logger.info("🚨 AdBlock system may be running in fallback mode (JavaScript blocking only)")
         }
+    }
+
+    /// Check if URL is a download URL that shouldn't be blocked
+    private func isDownloadURL(_ url: URL) -> Bool {
+        let pathExtension = url.pathExtension.lowercased()
+        let path = url.path.lowercased()
+        let lastComponent = url.lastPathComponent.lowercased()
+        
+        // Common download file extensions
+        let downloadExtensions = [
+            "zip", "dmg", "pkg", "exe", "msi", "deb", "rpm", "tar", "gz", "bz2", "iso",
+            "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx",
+            "mp4", "mp3", "avi", "mkv", "mov", "wav", "flac", "webm",
+            "jpg", "jpeg", "png", "gif", "webp", "svg", "bmp", "tiff",
+            "apk", "ipa", "appx", "snap", "flatpak"
+        ]
+        
+        // Check file extension
+        if !pathExtension.isEmpty && downloadExtensions.contains(pathExtension) {
+            return true
+        }
+        
+        // Check path patterns
+        let downloadPaths = ["download", "releases", "files", "dist", "assets", "media"]
+        if downloadPaths.contains(where: { path.contains($0) }) {
+            return true
+        }
+        
+        // Check if it looks like a versioned file or release
+        if lastComponent.contains(where: \.isNumber) && 
+           (lastComponent.contains("-") || lastComponent.contains("_") || lastComponent.contains(".")) {
+            return true
+        }
+        
+        // Check specific domains known for downloads
+        if let host = url.host?.lowercased() {
+            let downloadDomains = ["releases.", "download.", "files.", "cdn.", "assets."]
+            if downloadDomains.contains(where: { host.contains($0) }) {
+                return true
+            }
+        }
+        
+        return false
     }
 
     private func setupUserScripts(for webView: WKWebView) async {

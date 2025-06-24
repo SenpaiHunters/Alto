@@ -103,12 +103,15 @@ public final class ABContentBlocker: NSObject, ObservableObject {
 
         do {
             let ruleLists = try await createMultipleRuleLists(from: allRules)
-            await updateRuleLists(ruleLists)
+            await applyRuleLists(ruleLists)
 
             // Update ABManager with the primary rule list (first one)
             if let primaryRuleList = ruleLists.first {
                 await ABManager.shared.setCompiledRuleList(primaryRuleList)
             }
+            
+            // Cache the rule hash for future validation
+            await ABManager.shared.cacheCurrentRuleHash()
 
             logger.info("✅ Content blocking rules compiled and applied successfully (\(ruleLists.count) rule lists)")
         } catch {
@@ -119,7 +122,7 @@ public final class ABContentBlocker: NSObject, ObservableObject {
 
     /// Create multiple rule lists from a large set of rules
     private func createMultipleRuleLists(from allRules: [ABContentRule]) async throws -> [WKContentRuleList] {
-        logger.info("🔧 Splitting \(allRules.count) rules into multiple rule lists (max \(maxRulesPerList) rules each)")
+        logger.info("🔧 Splitting \(allRules.count) rules into multiple rule lists (max \(self.maxRulesPerList) rules each)")
 
         // Separate blocking rules from whitelist rules
         var blockingRules: [ABContentRule] = []
@@ -284,6 +287,106 @@ public final class ABContentBlocker: NSObject, ObservableObject {
         if before != after {
             logger.info("🧹 Cleaned up WebViews: \(before) -> \(after)")
         }
+    }
+
+    /// Apply rule lists to all registered WebViews
+    private func applyRuleLists(_ ruleLists: [WKContentRuleList]) async {
+        currentRuleLists = ruleLists
+        
+        // Apply to all registered WebViews
+        for wrapper in registeredWebViews {
+            if let webView = wrapper.webView {
+                await applyRuleListsToWebView(webView, ruleLists: ruleLists)
+            }
+        }
+    }
+    
+    /// Check if rule lists are already compiled and available
+    public func hasCompiledRules() async -> Bool {
+        // Check if WebKit has our compiled rule lists persisted
+        guard let ruleListStore = WKContentRuleListStore.default() else {
+            logger.debug("🔍 No rule list store available")
+            return false
+        }
+        
+        do {
+            // Try to look up our known rule list identifiers using async/await
+            let identifier1 = "AltoBlockRules_0"
+            let ruleList1 = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<WKContentRuleList?, Error>) in
+                ruleListStore.lookUpContentRuleList(forIdentifier: identifier1) { ruleList, error in
+                    if let error = error {
+                        continuation.resume(throwing: error)
+                    } else {
+                        continuation.resume(returning: ruleList)
+                    }
+                }
+            }
+            
+            if ruleList1 != nil {
+                logger.info("📋 Found existing compiled rule lists in WebKit store")
+                // Load the existing rule lists into memory
+                var existingRuleLists: [WKContentRuleList] = []
+                
+                for i in 0..<3 { // We typically create 3 rule lists
+                    let identifier = "AltoBlockRules_\(i)"
+                    do {
+                        let ruleList = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<WKContentRuleList?, Error>) in
+                            ruleListStore.lookUpContentRuleList(forIdentifier: identifier) { ruleList, error in
+                                if let error = error {
+                                    continuation.resume(throwing: error)
+                                } else {
+                                    continuation.resume(returning: ruleList)
+                                }
+                            }
+                        }
+                        if let ruleList = ruleList {
+                            existingRuleLists.append(ruleList)
+                        }
+                    } catch {
+                        // Rule list not found or error - continue with others
+                        logger.debug("🔍 Rule list \(identifier) not found: \(error)")
+                    }
+                }
+                
+                if !existingRuleLists.isEmpty {
+                    currentRuleLists = existingRuleLists
+                    logger.info("📋 Loaded \(existingRuleLists.count) existing rule lists from WebKit store")
+                    return true
+                }
+            }
+        } catch {
+            logger.debug("🔍 No existing rule lists found in WebKit store: \(error)")
+        }
+        
+        return false
+    }
+
+    /// Apply rule lists to a specific WebView
+    private func applyRuleListsToWebView(_ webView: WKWebView, ruleLists: [WKContentRuleList]) async {
+        let url = webView.url?.absoluteString ?? "unknown"
+        logger.info("🛡️ Applying rule lists to WebView (URL: \(url))")
+
+        await removeAllRuleLists(from: webView)
+        for ruleList in ruleLists {
+            await webView.configuration.userContentController.add(ruleList)
+        }
+
+        logger.info("✅ Applied rule lists to WebView (URL: \(url))")
+    }
+
+    /// Get currently compiled content rule lists
+    public func getCurrentCompiledRuleLists() async -> [WKContentRuleList] {
+        if currentRuleLists.isEmpty {
+            // Try to load from WebKit store if empty
+            let _ = await hasCompiledRules()
+        }
+        return currentRuleLists
+    }
+    
+    /// Get first compiled content rule list (for backward compatibility)
+    public func getCurrentCompiledRuleList() async -> WKContentRuleList? {
+        let ruleLists = await getCurrentCompiledRuleLists()
+        return ruleLists.first
     }
 }
 
