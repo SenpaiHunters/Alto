@@ -39,7 +39,7 @@ class HoverZoneViewModel {
         self.index = index
 
         if index == tabLocation.tabs.count {
-            print("EQUAL COUNT")
+            // print("EQUAL COUNT")
             self.placement = .end
         }
     }

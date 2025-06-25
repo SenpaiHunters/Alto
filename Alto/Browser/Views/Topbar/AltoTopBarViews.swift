@@ -1,6 +1,8 @@
 import OpenADK
 import SwiftUI
 
+// MARK: - AltoTopBar
+
 struct AltoTopBar: View {
     var model: AltoTopBarViewModel
     
@@ -9,11 +11,11 @@ struct AltoTopBar: View {
             MacButtonsView()
                 .padding(.leading, 6)
                 .frame(width: 70)
-            
+
             SpacePickerView(model: SpacePickerViewModel(state: model.state))
                 .fixedSize()
-            
-            
+
+
             AltoButton(action: {
                 model.state.currentSpace?.currentTab?.content[0].goBack()
             }, icon: "arrow.left", active: model.state.currentSpace?.currentTab?.content[0].canGoBack ?? false)
@@ -40,7 +42,7 @@ struct AltoTopBar: View {
             if !model.state.tabManager.globalLocations[0].tabs.isEmpty {
                 Divider().frame(width: 2)
             }
-            
+
             // TODO: make a better system for getting tab locations
             if let tabLocation = model.state.currentSpace?.localLocations[1] {
                 DropZoneView(model: DropZoneViewModel(
@@ -57,9 +59,11 @@ struct AltoTopBar: View {
                 .fixedSize()
         }
         .frame(height: 30)
-        .zIndex(100000)
+        .zIndex(100_000)
     }
 }
+
+// MARK: - SpacePickerViewModel
 
 @Observable
 class SpacePickerViewModel {
@@ -68,17 +72,20 @@ class SpacePickerViewModel {
     var spaces: [Space] {
         Alto.shared.spaceManager.spaces
     }
-    var isDisplaying: Bool = false
-    
+
+    var isDisplaying = false
+
     init(state: GenaricState) {
         self.state = state
     }
 }
 
 
+// MARK: - SpacePickerView
+
 struct SpacePickerView: View {
     var model: SpacePickerViewModel
-    
+
     var body: some View {
         HStack {
             Text(model.state.currentSpace?.name ?? "Select Space")
@@ -95,8 +102,10 @@ struct SpacePickerView: View {
                 if model.isDisplaying {
                     PickerDropdownView(model: model, items: model.spaces)
                         // Offset the dropdown to appear below the button.
-                        .offset(y: 35)
-                        .zIndex(1000000)
+
+                            .offset(y: 35)
+                            .zIndex(1_000_000)
+
                 }
             },
             alignment: .topLeading
@@ -104,11 +113,14 @@ struct SpacePickerView: View {
     }
 }
 
+
+// MARK: - PickerDropdownView
+
 // TODO: Make this a general view for all drop downs
 struct PickerDropdownView: View {
     var model: SpacePickerViewModel
     var items: [Space]
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             ScrollView {
@@ -133,7 +145,7 @@ struct PickerDropdownView: View {
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
-                        
+                                              
                         if space.id != items.last?.id {
                             Divider()
                         }
@@ -141,7 +153,9 @@ struct PickerDropdownView: View {
                 }
             }
         }
-        .zIndex(1000000)
+
+        .zIndex(1_000_000)
+
         .padding(.vertical, 5)
         .frame(width: 240)
         .frame(height: 200)

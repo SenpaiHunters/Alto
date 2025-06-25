@@ -6,6 +6,11 @@ struct TopBarRigtButtonsView: View {
 
     var body: some View {
         HStack {
+            // Download button
+            DownloadButtonView()
+                .frame(height: 30)
+                .fixedSize()
+
             AltoButton(action: {
                 withAnimation(.spring(duration: 0.2)) {
                     altoState.isShowingCommandPalette = true
