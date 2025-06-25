@@ -5,7 +5,7 @@ import SwiftUI
 
 struct AltoTopBar: View {
     var model: AltoTopBarViewModel
-
+    
     var body: some View {
         HStack(spacing: 2) {
             MacButtonsView()
@@ -15,29 +15,30 @@ struct AltoTopBar: View {
             SpacePickerView(model: SpacePickerViewModel(state: model.state))
                 .fixedSize()
 
+
             AltoButton(action: {
                 model.state.currentSpace?.currentTab?.content[0].goBack()
             }, icon: "arrow.left", active: model.state.currentSpace?.currentTab?.content[0].canGoBack ?? false)
-                .frame(height: 30)
-                .fixedSize()
-                .keyboardShortcut(Shortcuts.goBack)
-                .keyboardShortcut(Shortcuts.goBackAlt)
-
+            .frame(height: 30)
+            .fixedSize()
+            .keyboardShortcut(Shortcuts.goBack)
+            .keyboardShortcut(Shortcuts.goBackAlt)
+            
             AltoButton(action: {
                 model.state.currentSpace?.currentTab?.content[0].goForward()
             }, icon: "arrow.right", active: model.state.currentSpace?.currentTab?.content[0].canGoForward ?? false)
-                .frame(height: 30)
-                .fixedSize()
-                .keyboardShortcut(Shortcuts.goForward)
-                .keyboardShortcut(Shortcuts.goForwardAlt)
-
+            .frame(height: 30)
+            .fixedSize()
+            .keyboardShortcut(Shortcuts.goForward)
+            .keyboardShortcut(Shortcuts.goForwardAlt)
+            
             FavoriteDropZoneView(model: FavoriteDropZoneViewModel(
                 state: model.state,
                 tabLocation: model.state.tabManager.globalLocations[0]
             ))
             .frame(height: 30)
             .fixedSize()
-
+            
             if !model.state.tabManager.globalLocations[0].tabs.isEmpty {
                 Divider().frame(width: 2)
             }
@@ -52,7 +53,7 @@ struct AltoTopBar: View {
                 .frame(maxWidth: .infinity)
                 .layoutPriority(1)
             }
-
+            
             TopBarRigtButtonsView()
                 .frame(height: 30)
                 .fixedSize()
@@ -79,6 +80,7 @@ class SpacePickerViewModel {
     }
 }
 
+
 // MARK: - SpacePickerView
 
 struct SpacePickerView: View {
@@ -100,14 +102,17 @@ struct SpacePickerView: View {
                 if model.isDisplaying {
                     PickerDropdownView(model: model, items: model.spaces)
                         // Offset the dropdown to appear below the button.
+
                             .offset(y: 35)
                             .zIndex(1_000_000)
+
                 }
             },
             alignment: .topLeading
         )
     }
 }
+
 
 // MARK: - PickerDropdownView
 
@@ -140,7 +145,7 @@ struct PickerDropdownView: View {
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
-
+                                              
                         if space.id != items.last?.id {
                             Divider()
                         }
@@ -148,7 +153,9 @@ struct PickerDropdownView: View {
                 }
             }
         }
+
         .zIndex(1_000_000)
+
         .padding(.vertical, 5)
         .frame(width: 240)
         .frame(height: 200)
