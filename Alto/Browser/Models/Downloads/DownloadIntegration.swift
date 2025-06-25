@@ -499,7 +499,7 @@ extension DownloadIntegration: WKScriptMessageHandler {
 
 // MARK: - WebPage Download Extension
 
-public extension WebPage {
+public extension ADKWebPage {
     /// Handle download responses in the navigation delegate
     @MainActor func webView(
         _ webView: WKWebView,

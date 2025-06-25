@@ -47,9 +47,9 @@ class HoverZoneViewModel {
     func onDrop(droppedTabs: [TabRepresentation], location: CGPoint) -> Bool {
         /// this goes through each item from the dropped payload
         for tab in droppedTabs {
-            if let location = Alto.shared.getTab(id: tab.id)?.location {
+            if let location = AltoData.shared.getTab(id: tab.id)?.location {
                 location.removeTab(id: tab.id)
-                Alto.shared.getTab(id: tab.id)?.location = tabLocation
+                AltoData.shared.getTab(id: tab.id)?.location = tabLocation
 
                 if tab.index < index {
                     tabLocation.tabs.insert(TabRepresentation(id: tab.id, index: index - 1), at: index - 1)

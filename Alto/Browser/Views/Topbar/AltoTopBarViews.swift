@@ -15,44 +15,17 @@ struct AltoTopBar: View {
             SpacePickerView(model: SpacePickerViewModel(state: model.state))
                 .fixedSize()
 
-
-            AltoButton(action: {
-                model.state.currentSpace?.currentTab?.content[0].goBack()
-            }, icon: "arrow.left", active: model.state.currentSpace?.currentTab?.content[0].canGoBack ?? false)
-            .frame(height: 30)
-            .fixedSize()
-            .keyboardShortcut(Shortcuts.goBack)
-            .keyboardShortcut(Shortcuts.goBackAlt)
-            
-            AltoButton(action: {
-                model.state.currentSpace?.currentTab?.content[0].goForward()
-            }, icon: "arrow.right", active: model.state.currentSpace?.currentTab?.content[0].canGoForward ?? false)
-            .frame(height: 30)
-            .fixedSize()
-            .keyboardShortcut(Shortcuts.goForward)
-            .keyboardShortcut(Shortcuts.goForwardAlt)
-            
             FavoriteDropZoneView(model: FavoriteDropZoneViewModel(
                 state: model.state,
-                tabLocation: model.state.tabManager.globalLocations[0]
+                tabLocation: model.state.tabManager.tabLocations[0]
             ))
             .frame(height: 30)
             .fixedSize()
             
-            if !model.state.tabManager.globalLocations[0].tabs.isEmpty {
+            if !model.state.tabManager.tabLocations[0].tabs.isEmpty {
                 Divider().frame(width: 2)
             }
 
-            // TODO: make a better system for getting tab locations
-            if let tabLocation = model.state.currentSpace?.localLocations[1] {
-                DropZoneView(model: DropZoneViewModel(
-                    state: model.state,
-                    tabLocation: tabLocation
-                ))
-                .frame(height: 30)
-                .frame(maxWidth: .infinity)
-                .layoutPriority(1)
-            }
             
             TopBarRigtButtonsView()
                 .frame(height: 30)
@@ -67,15 +40,18 @@ struct AltoTopBar: View {
 
 @Observable
 class SpacePickerViewModel {
-    var state: GenaricState
+    var state: AltoState
+    var tabManager: AltoTabsManager? {
+        state.tabManager as? AltoTabsManager
+    }
     // Changed `spaces` to a computed property to ensure it's always up-to-date.
     var spaces: [Space] {
-        Alto.shared.spaceManager.spaces
+        AltoData.shared.spaceManager.spaces
     }
 
     var isDisplaying = false
 
-    init(state: GenaricState) {
+    init(state: AltoState) {
         self.state = state
     }
 }
@@ -88,7 +64,7 @@ struct SpacePickerView: View {
 
     var body: some View {
         HStack {
-            Text(model.state.currentSpace?.name ?? "Select Space")
+            Text(model.tabManager?.currentSpace?.name ?? "Select Space")
             Image(systemName: "chevron.down")
         }
         .padding(.horizontal, 10)
@@ -127,7 +103,7 @@ struct PickerDropdownView: View {
                 LazyVStack(alignment: .leading, spacing: 0) {
                     ForEach(items, id: \.id) { space in
                         Button {
-                            model.state.currentSpace = space
+                            model.tabManager?.currentSpace = space
                             model.isDisplaying = false
                         } label: {
                             HStack {
@@ -135,7 +111,7 @@ struct PickerDropdownView: View {
                                     .foregroundColor(.primary)
                                 Spacer()
                                 // Add a checkmark to indicate the active space.
-                                if space.id == model.state.currentSpace?.id {
+                                if space.id == model.tabManager?.currentSpace?.id {
                                     Image(systemName: "checkmark")
                                         .font(.headline.weight(.semibold))
                                 }

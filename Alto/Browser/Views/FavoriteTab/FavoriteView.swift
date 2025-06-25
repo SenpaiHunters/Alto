@@ -49,10 +49,6 @@ struct AltoFavoriteView: View {
         .padding(4)
         .frame(width: 150)
         .background(
-            RoundedRectangle(cornerRadius: 8)
-                .fill((model.state.currentSpace?.currentTab?.id == model.tab.id || model.isHovered) ?
-                    .gray.opacity(0.4) : .gray.opacity(0)
-                )
         )
         .contentShape(Rectangle()) // Makes the background clickable
         .gesture(

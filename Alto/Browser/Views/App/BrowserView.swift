@@ -4,15 +4,11 @@ import OpenADK
 import SwiftUI
 
 struct BrowserView: View {
-    var genaricState: GenaricState
+    @Environment(AltoState.self) private var altoState
+
 
     // If you can find a better solution please make a pr!
-    var state: AltoState? {
-        if let altoState = genaricState as? AltoState {
-            return altoState
-        }
-        return nil
-    }
+    
 
     var body: some View {
         ZStack {
@@ -20,7 +16,6 @@ struct BrowserView: View {
             BrowserContentView()
             CommandPaletteView()
         }
-        .environment(state)
         .preferredColorScheme(PreferencesManager.shared.colorScheme)
         .ignoresSafeArea()
     }

@@ -9,7 +9,7 @@ struct SidebarTabView: View {
         ZStack {
             VStack(spacing: 2) {
                 // Favorites section
-                if !model.state.tabManager.globalLocations[0].tabs.isEmpty {
+                if !model.state.tabManager.tabLocations[0].tabs.isEmpty {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Favorites")
                             .font(.caption)
@@ -17,7 +17,7 @@ struct SidebarTabView: View {
                             .padding(.horizontal, 8)
                             .padding(.top, 8)
 
-                        ForEach(model.state.tabManager.globalLocations[0].tabs, id: \.id) { tab in
+                        ForEach(model.state.tabManager.tabLocations[0].tabs, id: \.id) { tab in
                             SidebarTabItem(
                                 model: TabViewModel(
                                     state: model.state,
@@ -36,7 +36,7 @@ struct SidebarTabView: View {
 
                 // Regular tabs section
                 VStack(alignment: .leading, spacing: 2) {
-                    if !model.state.tabManager.globalLocations[0].tabs.isEmpty {
+                    if !model.state.tabManager.tabLocations[0].tabs.isEmpty {
                         Text("Tabs")
                             .font(.caption)
                             .foregroundColor(.secondary)
@@ -84,10 +84,7 @@ struct SidebarTabItem: View {
         .padding(4)
         .frame(height: 30) // Match the height of horizontal tabs
         .background(
-            RoundedRectangle(cornerRadius: 8)
-                .fill((model.state.currentSpace?.currentTab?.id == model.tab.id || model.isHovered) ?
-                    .gray.opacity(0.4) : .gray.opacity(0)
-                )
+            
         )
         .contentShape(Rectangle())
         .gesture(
