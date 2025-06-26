@@ -15,7 +15,6 @@ struct AltoTabView: View {
             closeButton(model: model)
         }
         .padding(4)
-        .frame(width: 150)
         .background(
             RoundedRectangle(cornerRadius: 8)
                 .fill((model.state.currentSpace?.currentTab?.id == model.tab.id || model.isHovered) ?
