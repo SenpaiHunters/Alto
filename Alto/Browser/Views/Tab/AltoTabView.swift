@@ -17,7 +17,6 @@ struct AltoTabView: View {
             }
         }
         .padding(4)
-        .frame(width: 150)
         .background(
             RoundedRectangle(cornerRadius: 8)
                 .fill((model.tabManager?.currentSpace?.currentTab?.id == model.tab.id || model.isHovered) ?

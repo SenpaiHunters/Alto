@@ -6,8 +6,7 @@ import SwiftUI
 struct BrowserContentView: View {
     @Environment(AltoState.self) private var altoState
     @Bindable var preferences: PreferencesManager = .shared
-    @Namespace private var animation
-
+    
     var data: AltoData {
         AltoData.shared
     }
@@ -37,7 +36,7 @@ struct BrowserContentView: View {
         HStack(spacing: 2) {
             NavigationButtons
 
-            tabsList
+            HorizontalTabsList()
             Spacer()
 
             AltoButton(action: {
@@ -46,6 +45,8 @@ struct BrowserContentView: View {
                 }
             }, icon: "plus", active: true)
 
+            DownloadButtonView()
+            
             AltoButton(action: {
                 AltoData.shared.spaceManager.newSpace(name: "asdf")
             }, icon: "rectangle.2.swap", active: true)
@@ -75,9 +76,22 @@ struct BrowserContentView: View {
             .buttonStyle(.plain)
             .padding(5)
 
-            tabsList
+            VerticalTabsList()
 
             Spacer()
+            
+            HStack {
+                DownloadButtonView()
+                
+                Spacer()
+                
+                AltoButton(action: {
+                    withAnimation(.spring(duration: 0.2)) {
+                        altoState.isShowingCommandPalette = true
+                    }
+                }, icon: "plus", active: true)
+                .frame(height: 30)
+            }
         }
         .frame(width: 250)
     }
@@ -112,11 +126,10 @@ struct BrowserContentView: View {
                 }
             },
             icon: "sidebar.left",
-            active: AltoData.shared.spaceManager.currentSpace?.currentTab?.content[0].canGoBack ?? false
+            active: true
         )
         .frame(height: 30)
         .fixedSize()
-        .matchedGeometryEffect(id: "sidebar.left", in: animation)
 
         if altoState.sidebar {
             Spacer()
@@ -128,38 +141,38 @@ struct BrowserContentView: View {
 
         AltoButton(
             action: {
-                AltoData.shared.spaceManager.currentSpace?.currentTab?.content[0].goBack()
+                altoState.tabManager.currentTab?.content[0].goBack()
             },
             icon: "arrow.left",
-            active: AltoData.shared.spaceManager.currentSpace?.currentTab?.content[0].canGoBack ?? false
+            active: altoState.tabManager.currentTab?.content[0].canGoBack ?? false
         )
         .frame(height: 30)
         .fixedSize()
-        .matchedGeometryEffect(id: "arrow.left", in: animation)
 
         AltoButton(
             action: {
-                AltoData.shared.spaceManager.currentSpace?.currentTab?.content[0].goForward()
+                altoState.tabManager.currentTab?.content[0].goForward()
+
             },
             icon: "arrow.right",
-            active: AltoData.shared.spaceManager.currentSpace?.currentTab?.content[0].canGoForward ?? false
+            active: altoState.tabManager.currentTab?.content[0].canGoForward ?? false
         )
         .frame(height: 30)
         .fixedSize()
-        .matchedGeometryEffect(id: "arrow.right", in: animation)
-
-        AltoButton(
-            action: {},
-            icon: "arrow.clockwise",
-            active: AltoData.shared.spaceManager.currentSpace?.currentTab?.content[0].canGoForward ?? false
-        )
-        .frame(height: 30)
-        .fixedSize()
-        .matchedGeometryEffect(id: "arrow.clockwise", in: animation)
     }
 
     @ViewBuilder
     private var tabsList: some View {
+        
+    }
+}
+
+
+
+struct VerticalTabsList: View {
+    @Environment(AltoState.self) private var altoState
+    
+    var body: some View {
         let location = altoState.tabManager.getLocation("unpinned")!
         ForEach(location.tabs, id: \.id) { tab in
             AltoTabView(model: TabViewModel(
@@ -170,11 +183,36 @@ struct BrowserContentView: View {
                 ),
                 tab: tab
             ))
-            .frame(maxWidth: altoState.sidebar ? .infinity : 150)
+            .frame(maxWidth: altoState.sidebar ? .infinity : 160)
             .frame(height: altoState.sidebar ? 30 : 30)
-            .matchedGeometryEffect(id: tab, in: animation)
+            .offset(!altoState.sidebar ? CGSize(width: -100, height: 0) : CGSize(width: 0, height: 0))
             
-            hoverZoneView(model: HoverZoneViewModel(state: altoState, tabLocation: location, index: tab.index))
+            // hoverZoneView(model: HoverZoneViewModel(state: altoState, tabLocation: location, index: tab.index))
+        }
+    }
+}
+
+
+
+struct HorizontalTabsList: View {
+    @Environment(AltoState.self) private var altoState
+    
+    var body: some View {
+        let location = altoState.tabManager.getLocation("unpinned")!
+        ForEach(location.tabs, id: \.id) { tab in
+            AltoTabView(model: TabViewModel(
+                state: altoState,
+                draggingViewModel: DropZoneViewModel(
+                    state: altoState,
+                    tabLocation: altoState.tabManager.getLocation("unpinned")!
+                ),
+                tab: tab
+            ))
+            .frame(maxWidth: altoState.sidebar ? .infinity : 160)
+            .frame(height: altoState.sidebar ? 30 : 30)
+            .offset(altoState.sidebar ? CGSize(width: 0, height: -40) : CGSize(width: 0, height: 0))
+
+            // hoverZoneView(model: HoverZoneViewModel(state: altoState, tabLocation: location, index: tab.index))
         }
     }
 }

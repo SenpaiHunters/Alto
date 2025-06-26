@@ -48,6 +48,8 @@ class TabViewModel {
 
     func handleSingleClick() {
         tabManager?.currentSpace?.currentTab = AltoData.shared.getTab(id: tab.id)
+        tabManager?.currentTab = AltoData.shared.getTab(id: tab.id)
+
     }
 
     func selectTab() {
