@@ -20,4 +20,3 @@ public class SpaceManager {
         AltoData.shared.spaces.append(newSpace)
     }
 }
-

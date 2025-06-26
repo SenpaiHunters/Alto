@@ -84,7 +84,6 @@ struct SidebarTabItem: View {
         .padding(4)
         .frame(height: 30) // Match the height of horizontal tabs
         .background(
-            
         )
         .contentShape(Rectangle())
         .gesture(

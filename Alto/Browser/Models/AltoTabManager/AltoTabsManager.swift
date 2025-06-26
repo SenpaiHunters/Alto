@@ -18,7 +18,7 @@ import WebKit
 @Observable
 open class AltoTabsManager: ADKTabManager {
     public var currentSpace: Space?
-    
+
     public init(state: AltoState? = nil) {
         let tabLocations = [
             TabLocation(title: "favorites")

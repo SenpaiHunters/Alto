@@ -296,8 +296,6 @@ public final class ABFilterListManager: ObservableObject {
         return rules
     }
 
-
-
     private func getBuiltInBlockingRules() -> [ABContentRule] {
         logger.info("🏗️ Building built-in blocking rules...")
 
@@ -776,6 +774,6 @@ public final class ABFilterListManager: ObservableObject {
 
     /// Get all enabled filter lists
     public func getEnabledFilterLists() -> [ABFilterList] {
-        return availableFilterLists.filter { $0.isEnabled }
+        availableFilterLists.filter(\.isEnabled)
     }
 }

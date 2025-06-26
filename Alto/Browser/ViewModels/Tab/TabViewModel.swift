@@ -10,6 +10,7 @@ class TabViewModel {
     var tabManager: AltoTabsManager? {
         state.tabManager as? AltoTabsManager
     }
+
     var altoTab: ADKTab? {
         AltoData.shared.getTab(id: tab.id)
     }
@@ -32,7 +33,6 @@ class TabViewModel {
     var isDragged = false
 
     var isCurrentTab: Bool {
-     
         tabManager?.currentSpace?.currentTab?.id == altoTab?.id
     }
 
@@ -49,7 +49,6 @@ class TabViewModel {
     func handleSingleClick() {
         tabManager?.currentSpace?.currentTab = AltoData.shared.getTab(id: tab.id)
         tabManager?.currentTab = AltoData.shared.getTab(id: tab.id)
-
     }
 
     func selectTab() {

@@ -17,7 +17,6 @@ struct AltoFavoriteViewDragged: View {
         .padding(4)
         .frame(width: 150)
         .background(
-            
         )
         .onAppear(
             perform: {
