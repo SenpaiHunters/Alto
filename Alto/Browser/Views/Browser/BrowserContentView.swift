@@ -6,7 +6,7 @@ import SwiftUI
 struct BrowserContentView: View {
     @Environment(AltoState.self) private var altoState
     @Bindable var preferences: PreferencesManager = .shared
-    
+
     var data: AltoData {
         AltoData.shared
     }
@@ -46,7 +46,7 @@ struct BrowserContentView: View {
             }, icon: "plus", active: true)
 
             DownloadButtonView()
-            
+
             AltoButton(action: {
                 AltoData.shared.spaceManager.newSpace(name: "asdf")
             }, icon: "rectangle.2.swap", active: true)
@@ -79,18 +79,18 @@ struct BrowserContentView: View {
             VerticalTabsList()
 
             Spacer()
-            
+
             HStack {
                 DownloadButtonView()
-                
+
                 Spacer()
-                
+
                 AltoButton(action: {
                     withAnimation(.spring(duration: 0.2)) {
                         altoState.isShowingCommandPalette = true
                     }
                 }, icon: "plus", active: true)
-                .frame(height: 30)
+                    .frame(height: 30)
             }
         }
         .frame(width: 250)
@@ -162,16 +162,14 @@ struct BrowserContentView: View {
     }
 
     @ViewBuilder
-    private var tabsList: some View {
-        
-    }
+    private var tabsList: some View {}
 }
 
-
+// MARK: - VerticalTabsList
 
 struct VerticalTabsList: View {
     @Environment(AltoState.self) private var altoState
-    
+
     var body: some View {
         let location = altoState.tabManager.getLocation("unpinned")!
         ForEach(location.tabs, id: \.id) { tab in
@@ -186,17 +184,17 @@ struct VerticalTabsList: View {
             .frame(maxWidth: altoState.sidebar ? .infinity : 160)
             .frame(height: altoState.sidebar ? 30 : 30)
             .offset(!altoState.sidebar ? CGSize(width: -100, height: 0) : CGSize(width: 0, height: 0))
-            
+
             // hoverZoneView(model: HoverZoneViewModel(state: altoState, tabLocation: location, index: tab.index))
         }
     }
 }
 
-
+// MARK: - HorizontalTabsList
 
 struct HorizontalTabsList: View {
     @Environment(AltoState.self) private var altoState
-    
+
     var body: some View {
         let location = altoState.tabManager.getLocation("unpinned")!
         ForEach(location.tabs, id: \.id) { tab in

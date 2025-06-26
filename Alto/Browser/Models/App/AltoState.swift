@@ -12,7 +12,7 @@ public class AltoState: ADKState {
     var isShowingCommandPalette = true
     var Topbar: AltoTopBarViewModel.TopbarState = .hidden
     var draggedTab: TabRepresentation?
-    
+
     public init() {
         let altoManager = AltoTabsManager()
         altoManager.currentSpace = AltoData.shared.spaces[0]

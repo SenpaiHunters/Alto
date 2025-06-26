@@ -109,7 +109,7 @@ public final class ABContentBlocker: NSObject, ObservableObject {
             if let primaryRuleList = ruleLists.first {
                 await ABManager.shared.setCompiledRuleList(primaryRuleList)
             }
-            
+
             // Cache the rule hash for future validation
             await ABManager.shared.cacheCurrentRuleHash()
 
@@ -292,7 +292,7 @@ public final class ABContentBlocker: NSObject, ObservableObject {
     /// Apply rule lists to all registered WebViews
     private func applyRuleLists(_ ruleLists: [WKContentRuleList]) async {
         currentRuleLists = ruleLists
-        
+
         // Apply to all registered WebViews
         for wrapper in registeredWebViews {
             if let webView = wrapper.webView {
@@ -300,7 +300,7 @@ public final class ABContentBlocker: NSObject, ObservableObject {
             }
         }
     }
-    
+
     /// Check if rule lists are already compiled and available
     public func hasCompiledRules() async -> Bool {
         // Check if WebKit has our compiled rule lists persisted
@@ -308,38 +308,44 @@ public final class ABContentBlocker: NSObject, ObservableObject {
             logger.debug("🔍 No rule list store available")
             return false
         }
-        
+
         do {
             // Try to look up our known rule list identifiers using async/await
             let identifier1 = "AltoBlockRules_0"
-            let ruleList1 = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<WKContentRuleList?, Error>) in
+            let ruleList1 = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<
+                WKContentRuleList?,
+                Error
+            >) in
                 ruleListStore.lookUpContentRuleList(forIdentifier: identifier1) { ruleList, error in
-                    if let error = error {
+                    if let error {
                         continuation.resume(throwing: error)
                     } else {
                         continuation.resume(returning: ruleList)
                     }
                 }
             }
-            
+
             if ruleList1 != nil {
                 logger.info("📋 Found existing compiled rule lists in WebKit store")
                 // Load the existing rule lists into memory
                 var existingRuleLists: [WKContentRuleList] = []
-                
-                for i in 0..<3 { // We typically create 3 rule lists
+
+                for i in 0 ..< 3 { // We typically create 3 rule lists
                     let identifier = "AltoBlockRules_\(i)"
                     do {
-                        let ruleList = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<WKContentRuleList?, Error>) in
+                        let ruleList = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<
+                            WKContentRuleList?,
+                            Error
+                        >) in
                             ruleListStore.lookUpContentRuleList(forIdentifier: identifier) { ruleList, error in
-                                if let error = error {
+                                if let error {
                                     continuation.resume(throwing: error)
                                 } else {
                                     continuation.resume(returning: ruleList)
                                 }
                             }
                         }
-                        if let ruleList = ruleList {
+                        if let ruleList {
                             existingRuleLists.append(ruleList)
                         }
                     } catch {
@@ -347,7 +353,7 @@ public final class ABContentBlocker: NSObject, ObservableObject {
                         logger.debug("🔍 Rule list \(identifier) not found: \(error)")
                     }
                 }
-                
+
                 if !existingRuleLists.isEmpty {
                     currentRuleLists = existingRuleLists
                     logger.info("📋 Loaded \(existingRuleLists.count) existing rule lists from WebKit store")
@@ -357,7 +363,7 @@ public final class ABContentBlocker: NSObject, ObservableObject {
         } catch {
             logger.debug("🔍 No existing rule lists found in WebKit store: \(error)")
         }
-        
+
         return false
     }
 
@@ -382,7 +388,7 @@ public final class ABContentBlocker: NSObject, ObservableObject {
         }
         return currentRuleLists
     }
-    
+
     /// Get first compiled content rule list (for backward compatibility)
     public func getCurrentCompiledRuleList() async -> WKContentRuleList? {
         let ruleLists = await getCurrentCompiledRuleLists()

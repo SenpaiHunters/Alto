@@ -5,7 +5,7 @@ import SwiftUI
 
 struct AltoTopBar: View {
     var model: AltoTopBarViewModel
-    
+
     var body: some View {
         HStack(spacing: 2) {
             MacButtonsView()
@@ -21,12 +21,11 @@ struct AltoTopBar: View {
             ))
             .frame(height: 30)
             .fixedSize()
-            
+
             if !model.state.tabManager.tabLocations[0].tabs.isEmpty {
                 Divider().frame(width: 2)
             }
 
-            
             TopBarRigtButtonsView()
                 .frame(height: 30)
                 .fixedSize()
@@ -44,6 +43,7 @@ class SpacePickerViewModel {
     var tabManager: AltoTabsManager? {
         state.tabManager as? AltoTabsManager
     }
+
     // Changed `spaces` to a computed property to ensure it's always up-to-date.
     var spaces: [Space] {
         AltoData.shared.spaceManager.spaces
@@ -55,7 +55,6 @@ class SpacePickerViewModel {
         self.state = state
     }
 }
-
 
 // MARK: - SpacePickerView
 
@@ -78,17 +77,14 @@ struct SpacePickerView: View {
                 if model.isDisplaying {
                     PickerDropdownView(model: model, items: model.spaces)
                         // Offset the dropdown to appear below the button.
-
                             .offset(y: 35)
                             .zIndex(1_000_000)
-
                 }
             },
             alignment: .topLeading
         )
     }
 }
-
 
 // MARK: - PickerDropdownView
 
@@ -121,7 +117,7 @@ struct PickerDropdownView: View {
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
-                                              
+
                         if space.id != items.last?.id {
                             Divider()
                         }
@@ -131,7 +127,6 @@ struct PickerDropdownView: View {
         }
 
         .zIndex(1_000_000)
-
         .padding(.vertical, 5)
         .frame(width: 240)
         .frame(height: 200)
