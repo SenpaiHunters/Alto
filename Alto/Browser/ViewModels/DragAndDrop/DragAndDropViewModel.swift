@@ -7,7 +7,7 @@ import UniformTypeIdentifiers
 
 @Observable
 class DropZoneViewModel {
-    var tabLocation: any TabLocationProtocol
+    var tabLocation: TabLocation
     var state: AltoState
 
     var isTargeted = false
@@ -20,7 +20,7 @@ class DropZoneViewModel {
         tabLocation.tabs.isEmpty
     }
 
-    init(state: AltoState, tabLocation: any TabLocationProtocol) {
+    init(state: AltoState, tabLocation: TabLocation) {
         self.state = state
         self.tabLocation = tabLocation
     }
@@ -29,9 +29,9 @@ class DropZoneViewModel {
         if isEmpty {
             /// this goes through each item from the dropped payload
             for tab in droppedTabs {
-                if let location = Alto.shared.getTab(id: tab.id)?.location {
+                if let location = AltoData.shared.getTab(id: tab.id)?.location {
                     location.removeTab(id: tab.id)
-                    Alto.shared.getTab(id: tab.id)?.location = tabLocation
+                    AltoData.shared.getTab(id: tab.id)?.location = tabLocation
                 }
             }
 

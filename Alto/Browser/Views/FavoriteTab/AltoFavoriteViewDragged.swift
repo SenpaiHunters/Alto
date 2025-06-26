@@ -17,16 +17,13 @@ struct AltoFavoriteViewDragged: View {
         .padding(4)
         .frame(width: 150)
         .background(
-            RoundedRectangle(cornerRadius: 8)
-                .fill((model.state.currentSpace?.currentTab?.id == model.tab.id || model.isHovered) ?
-                    .gray.opacity(0.4) : .gray.opacity(0)
-                )
+            
         )
         .onAppear(
             perform: {
                 model.state.draggedTab = model.tab
                 model.isDragged = true
-                model.state.currentSpace?.currentTab = model.altoTab
+
                 print("drag start")
             }
         )

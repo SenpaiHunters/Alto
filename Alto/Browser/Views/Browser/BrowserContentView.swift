@@ -1,135 +1,218 @@
 import OpenADK
 import SwiftUI
 
+// MARK: - BrowserContentView
+
 struct BrowserContentView: View {
     @Environment(AltoState.self) private var altoState
     @Bindable var preferences: PreferencesManager = .shared
+    
+    var data: AltoData {
+        AltoData.shared
+    }
 
     var body: some View {
-        ZStack {
-            if preferences.sidebarPosition == .left || preferences.sidebarPosition == .right {
-                // Sidebar layout
-                HStack(spacing: 0) {
-                    if preferences.sidebarPosition == .left {
-                        sidebarLayout
-                        mainContentArea
-                    } else {
-                        mainContentArea
-                        sidebarLayout
-                    }
+        HStack(spacing: 5) {
+            if altoState.sidebar, !altoState.sidebarIsRight {
+                sidebar
+            }
+            VStack(spacing: 5) {
+                if !altoState.sidebar {
+                    topbar
+                        .zIndex(1) // This ensures the spaces and url popups apear over the web content
                 }
-            } else {
-                // Original horizontal layout
-                VStack(spacing: 5) {
-                    if altoState.Topbar == .active {
-                        AltoTopBar(model: AltoTopBarViewModel(state: altoState))
-                    }
+                content
+            }
 
-                    ZStack {
-                        let currentContent = altoState.currentContent
-
-                        if let currentContent {
-                            ForEach(Array(currentContent.enumerated()), id: \.element.id) { _, content in
-                                AnyView(content.returnView())
-                                    .cornerRadius(10)
-                            }
-                        }
-
-                        if currentContent == nil {
-                            Image("Logo")
-                                .opacity(0.5)
-                                .blendMode(.softLight)
-                                .scaleEffect(1.3)
-                        }
-                    }
-                }
-                .padding(5)
-            }            
+            if altoState.sidebar, altoState.sidebarIsRight {
+                sidebar
+            }
         }
-        .ignoresSafeArea()
+        .padding(5)
     }
 
     @ViewBuilder
-    private var sidebarLayout: some View {
-        // Sidebar with tabs
-        VStack(spacing: 0) {
-            // Top bar controls (back/forward buttons, etc.)
+    private var topbar: some View {
+        HStack(spacing: 2) {
+            NavigationButtons
+
+            HorizontalTabsList()
+            Spacer()
+
+            AltoButton(action: {
+                withAnimation(.spring(duration: 0.2)) {
+                    altoState.isShowingCommandPalette = true
+                }
+            }, icon: "plus", active: true)
+
+            DownloadButtonView()
+            
+            AltoButton(action: {
+                AltoData.shared.spaceManager.newSpace(name: "asdf")
+            }, icon: "rectangle.2.swap", active: true)
+        }
+        .frame(height: 30)
+    }
+
+    @ViewBuilder
+    private var sidebar: some View {
+        VStack {
             HStack(spacing: 2) {
-                MacButtonsView()
-                    .padding(.leading, 6)
-                    .frame(width: 70)
-
-                AltoButton(
-                    action: {
-                        altoState.currentSpace?.currentTab?.content[0].goBack()
-                    },
-                    icon: "arrow.left",
-                    active: altoState.currentSpace?.currentTab?.content[0].canGoBack ?? false
-                )
-                .frame(height: 30)
-                .fixedSize()
-
-                AltoButton(
-                    action: {
-                        altoState.currentSpace?.currentTab?.content[0].goForward()
-                    },
-                    icon: "arrow.right",
-                    active: altoState.currentSpace?.currentTab?.content[0].canGoForward ?? false
-                )
-                .frame(height: 30)
-                .fixedSize()
-
-                Spacer()
+                NavigationButtons
             }
             .frame(height: 30)
-            .padding(.horizontal, 5)
 
-            // Sidebar tabs
-            if let location = altoState.currentSpace?.localLocations[1] {
-                SidebarTabView(model: DropZoneViewModel(
-                    state: altoState,
-                    tabLocation: location
-                ))
+            Button {
+                withAnimation(.spring(duration: 0.2)) {
+                    altoState.isShowingCommandPalette = true
+                }
+            } label: {
+                HStack {
+                    Image(systemName: "plus")
+                    Text("New Tab")
+                    Spacer()
+                }
+            }
+            .buttonStyle(.plain)
+            .padding(5)
+
+            VerticalTabsList()
+
+            Spacer()
+            
+            HStack {
+                DownloadButtonView()
+                
+                Spacer()
+                
+                AltoButton(action: {
+                    withAnimation(.spring(duration: 0.2)) {
+                        altoState.isShowingCommandPalette = true
+                    }
+                }, icon: "plus", active: true)
+                .frame(height: 30)
             }
         }
-        .frame(width: 200)
+        .frame(width: 250)
     }
 
     @ViewBuilder
-    private var mainContentArea: some View {
-        // Main content area
-        VStack(spacing: 0) {
-            // Address bar area
-            HStack {
-                Spacer()
-                TopBarRigtButtonsView()
-                    .frame(height: 30)
-                    .fixedSize()
+    private var content: some View {
+        let currentContent = altoState.currentContent
+
+        if let currentContent {
+            ForEach(Array(currentContent.enumerated()), id: \.element.id) { _, content in
+                AnyView(content.returnView())
+                    .cornerRadius(10)
+                    .shadow(radius: 4)
             }
-            .frame(height: 30)
-            .padding(.horizontal, 5)
+        } else {
+            EmptyWebView()
+        }
+    }
 
-            // Web view
-            ZStack {
-                let currentContent = altoState.currentContent
+    @ViewBuilder
+    private var NavigationButtons: some View {
+        if !altoState.sidebarIsRight || !altoState.sidebar {
+            MacButtonsView()
+                .padding(.leading, 6)
+                .frame(width: 70)
+        }
 
-                if let currentContent {
-                    ForEach(Array(currentContent.enumerated()), id: \.element.id) { _, content in
-                        AnyView(content.returnView())
-                            .cornerRadius(10)
-                    }
+        AltoButton(
+            action: {
+                withAnimation(.spring(duration: 0.2)) {
+                    altoState.sidebar.toggle()
                 }
+            },
+            icon: "sidebar.left",
+            active: true
+        )
+        .frame(height: 30)
+        .fixedSize()
 
-                if currentContent == nil {
-                    Image("Logo")
-                        .opacity(0.5)
-                        .blendMode(.softLight)
-                        .scaleEffect(1.3)
-                }
-            }
-            .padding(.leading, 5)
-            .padding(.trailing, 5)
-            .padding(.bottom, 5)
+        if altoState.sidebar {
+            Spacer()
+        }
+
+        if !altoState.sidebar {
+            SpacePickerView(model: SpacePickerViewModel(state: altoState))
+        }
+
+        AltoButton(
+            action: {
+                altoState.tabManager.currentTab?.content[0].goBack()
+            },
+            icon: "arrow.left",
+            active: altoState.tabManager.currentTab?.content[0].canGoBack ?? false
+        )
+        .frame(height: 30)
+        .fixedSize()
+
+        AltoButton(
+            action: {
+                altoState.tabManager.currentTab?.content[0].goForward()
+
+            },
+            icon: "arrow.right",
+            active: altoState.tabManager.currentTab?.content[0].canGoForward ?? false
+        )
+        .frame(height: 30)
+        .fixedSize()
+    }
+
+    @ViewBuilder
+    private var tabsList: some View {
+        
+    }
+}
+
+
+
+struct VerticalTabsList: View {
+    @Environment(AltoState.self) private var altoState
+    
+    var body: some View {
+        let location = altoState.tabManager.getLocation("unpinned")!
+        ForEach(location.tabs, id: \.id) { tab in
+            AltoTabView(model: TabViewModel(
+                state: altoState,
+                draggingViewModel: DropZoneViewModel(
+                    state: altoState,
+                    tabLocation: altoState.tabManager.getLocation("unpinned")!
+                ),
+                tab: tab
+            ))
+            .frame(maxWidth: altoState.sidebar ? .infinity : 160)
+            .frame(height: altoState.sidebar ? 30 : 30)
+            .offset(!altoState.sidebar ? CGSize(width: -100, height: 0) : CGSize(width: 0, height: 0))
+            
+            // hoverZoneView(model: HoverZoneViewModel(state: altoState, tabLocation: location, index: tab.index))
+        }
+    }
+}
+
+
+
+struct HorizontalTabsList: View {
+    @Environment(AltoState.self) private var altoState
+    
+    var body: some View {
+        let location = altoState.tabManager.getLocation("unpinned")!
+        ForEach(location.tabs, id: \.id) { tab in
+            AltoTabView(model: TabViewModel(
+                state: altoState,
+                draggingViewModel: DropZoneViewModel(
+                    state: altoState,
+                    tabLocation: altoState.tabManager.getLocation("unpinned")!
+                ),
+                tab: tab
+            ))
+            .frame(maxWidth: altoState.sidebar ? .infinity : 160)
+            .frame(height: altoState.sidebar ? 30 : 30)
+            .offset(altoState.sidebar ? CGSize(width: 0, height: -40) : CGSize(width: 0, height: 0))
+
+            // hoverZoneView(model: HoverZoneViewModel(state: altoState, tabLocation: location, index: tab.index))
         }
     }
 }

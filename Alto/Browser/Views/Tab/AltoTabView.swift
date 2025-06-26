@@ -12,12 +12,14 @@ struct AltoTabView: View {
 
             Spacer()
 
-            closeButton(model: model)
+            if model.isHovered {
+                closeButton(model: model) //
+            }
         }
         .padding(4)
         .background(
             RoundedRectangle(cornerRadius: 8)
-                .fill((model.state.currentSpace?.currentTab?.id == model.tab.id || model.isHovered) ?
+                .fill((model.tabManager?.currentSpace?.currentTab?.id == model.tab.id || model.isHovered) ?
                     .gray.opacity(0.4) : .gray.opacity(0)
                 ) // lol i need to fix this
         )
@@ -28,7 +30,7 @@ struct AltoTabView: View {
             }
         )
         .simultaneousGesture(
-            TapGesture().onEnded {
+            TapGesture(count: 1).onEnded {
                 model.handleSingleClick()
             }
         )

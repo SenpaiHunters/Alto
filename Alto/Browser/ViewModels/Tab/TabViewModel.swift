@@ -7,9 +7,11 @@ class TabViewModel {
     var state: AltoState
     var tab: TabRepresentation
     var draggingViewModel: DropZoneViewModel
-
-    var altoTab: (any TabProtocol)? {
-        return Alto.shared.getTab(id: tab.id)
+    var tabManager: AltoTabsManager? {
+        state.tabManager as? AltoTabsManager
+    }
+    var altoTab: ADKTab? {
+        AltoData.shared.getTab(id: tab.id)
     }
 
     var tabTitle: String {
@@ -30,7 +32,8 @@ class TabViewModel {
     var isDragged = false
 
     var isCurrentTab: Bool {
-        state.currentSpace?.currentTab?.id == altoTab?.id
+     
+        tabManager?.currentSpace?.currentTab?.id == altoTab?.id
     }
 
     var tabRepresentation: TabRepresentation {
@@ -44,7 +47,9 @@ class TabViewModel {
     }
 
     func handleSingleClick() {
-        state.currentSpace?.currentTab = Alto.shared.getTab(id: tab.id)
+        tabManager?.currentSpace?.currentTab = AltoData.shared.getTab(id: tab.id)
+        tabManager?.currentTab = AltoData.shared.getTab(id: tab.id)
+
     }
 
     func selectTab() {
