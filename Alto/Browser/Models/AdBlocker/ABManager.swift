@@ -5,10 +5,10 @@
 //  Created by Kami on 23/06/2025.
 //
 
+import CryptoKit
 import Foundation
 import OSLog
 import WebKit
-import CryptoKit
 
 // MARK: - ABManager
 
@@ -33,7 +33,7 @@ public class ABManager: ObservableObject {
     public let statisticsManager = ABStatistics()
 
     // MARK: - WebKit Content Rules State
-    
+
     private var compiledRuleList: WKContentRuleList?
     private var lastRuleCompilationHash: String?
     private var isInitialized = false
@@ -42,9 +42,9 @@ public class ABManager: ObservableObject {
 
     private let settingsFileURL: URL
     private let settingsKey = "ABManagerSettings"
-    
+
     // MARK: - Rule Compilation Cache
-    
+
     private var cachedRuleListsKey: String
     private var ruleHashKey: String
 
@@ -94,12 +94,12 @@ public class ABManager: ObservableObject {
 
         // Load cached rule hash for cache validation
         loadCachedRuleHash()
-        
+
         // Save cache keys if they were newly generated
         if !fileManager.fileExists(atPath: cacheKeysURL.path) {
             saveCacheKeys(to: cacheKeysURL)
         }
-        
+
         logger.info("🛡️ ABManager basic setup complete, waiting for explicit initialization")
     }
 
@@ -111,23 +111,23 @@ public class ABManager: ObservableObject {
             logger.debug("🔄 Content blocking already initialized, skipping")
             return
         }
-        
+
         initializationState = .initializing
         logger.info("🛡️ Initializing content blocking system...")
-        
+
         // Check if we have cached compiled rules first
         let hasRules = await contentBlocker.hasCompiledRules()
         let isCacheValid = await isCacheValid()
-        
-        if hasRules && isCacheValid {
+
+        if hasRules, isCacheValid {
             logger.info("📋 Using cached compiled rules")
             initializationState = .initialized
             return
         }
-        
+
         // Need to compile new rules
         logger.info("🔍 No compiled rules found, need to compile")
-        
+
         do {
             await contentBlocker.compileAndApplyRules()
             initializationState = .initialized
@@ -186,7 +186,7 @@ public class ABManager: ObservableObject {
             }
         }
 
-        logger.info("🔄 Ad blocking toggled: \(self.isEnabled ? "ON" : "OFF")")
+        // logger.info("🔄 Ad blocking toggled: \(isEnabled ? "ON" : "OFF")")
 
         // Trigger UI update
         objectWillChange.send()
@@ -267,7 +267,7 @@ public class ABManager: ObservableObject {
     private func compileContentRules() async {
         // Delegate to ABContentBlocker to avoid duplication
         await contentBlocker.compileAndApplyRules()
-        
+
         // Cache the rule hash for future cache validation
         await cacheCurrentRuleHash()
     }
@@ -280,29 +280,33 @@ public class ABManager: ObservableObject {
             logger.info("🔍 No compiled rules found, need to compile")
             return false
         }
-        
+
         // Generate hash of current filter configuration
         let currentHash = await calculateCurrentRuleHash()
-        
+
         // Check if hash matches cached hash
         if let cachedHash = lastRuleCompilationHash, currentHash == cachedHash {
             logger.info("✅ Rule configuration unchanged (hash: \(currentHash.prefix(8))...), using cached rules")
             return true
         } else {
-            logger.info("🔄 Rule configuration changed (old: \(self.lastRuleCompilationHash?.prefix(8) ?? "none"), new: \(currentHash.prefix(8))), need to recompile")
+//            logger
+//                .info(
+//                    "🔄 Rule configuration changed (old: \(self.lastRuleCompilationHash?.prefix(8) ?? "none"), new:
+//                    \(currentHash.prefix(8))), need to recompile"
+//                )
             return false
         }
     }
-    
+
     /// Calculate hash representing current rule configuration
     private func calculateCurrentRuleHash() async -> String {
         // Include factors that would require recompilation:
         // 1. Enabled filter lists and their update times
         // 2. Whitelist domains
         // 3. Built-in rule configuration
-        
+
         var hashComponents: [String] = []
-        
+
         // Filter list fingerprint
         let filterLists = await filterListManager.getEnabledFilterLists()
         for filterList in filterLists {
@@ -310,30 +314,30 @@ public class ABManager: ObservableObject {
             let component = "\(filterList.name)|\(filterList.url)|\(filterList.lastUpdated?.timeIntervalSince1970 ?? 0)"
             hashComponents.append(component)
         }
-        
+
         // Whitelist domains
         let sortedWhitelist = Array(whitelistedDomains).sorted()
-        hashComponents.append("whitelist:\(sortedWhitelist.joined(separator:","))")
-        
+        hashComponents.append("whitelist:\(sortedWhitelist.joined(separator: ","))")
+
         // Built-in rules version (increment this if built-in rules change)
         hashComponents.append("builtin:v1.0")
-        
+
         // Create combined hash
         let combined = hashComponents.joined(separator: "|")
         let data = combined.data(using: .utf8) ?? Data()
         let hash = SHA256.hash(data: data)
         return hash.compactMap { String(format: "%02x", $0) }.joined()
     }
-    
+
     /// Cache the current rule hash for future validation
     public func cacheCurrentRuleHash() async {
         lastRuleCompilationHash = await calculateCurrentRuleHash()
-        
+
         // Persist to UserDefaults for next app launch
         UserDefaults.standard.set(lastRuleCompilationHash, forKey: ruleHashKey)
-        logger.info("💾 Cached rule hash: \(self.lastRuleCompilationHash?.prefix(8) ?? "none")...")
+//        logger.info("💾 Cached rule hash: \(self.lastRuleCompilationHash?.prefix(8) ?? "none")...")
     }
-    
+
     /// Load cached rule hash from UserDefaults
     private func loadCachedRuleHash() {
         lastRuleCompilationHash = UserDefaults.standard.string(forKey: ruleHashKey)
@@ -348,10 +352,10 @@ public class ABManager: ObservableObject {
             logger.debug("🔍 No cached hash found")
             return false
         }
-        
+
         let currentHash = await calculateCurrentRuleHash()
         let isValid = cachedHash == currentHash
-        
+
         if isValid {
             logger.info("✅ Cache is valid, using cached rules")
         } else {
@@ -359,20 +363,20 @@ public class ABManager: ObservableObject {
             logger.debug("🔍 Cached hash: \(cachedHash.prefix(8))...")
             logger.debug("🔍 Current hash: \(currentHash.prefix(8))...")
         }
-        
+
         return isValid
     }
 
     // MARK: - Cache Key Management
-    
+
     private struct CacheKeys: Codable {
         let cachedRuleListsKey: String
         let ruleHashKey: String
     }
-    
+
     private func loadCacheKeys(from url: URL) -> CacheKeys? {
         guard FileManager.default.fileExists(atPath: url.path) else { return nil }
-        
+
         do {
             let data = try Data(contentsOf: url)
             return try JSONDecoder().decode(CacheKeys.self, from: data)
@@ -381,13 +385,13 @@ public class ABManager: ObservableObject {
             return nil
         }
     }
-    
+
     private func saveCacheKeys(to url: URL) {
         let keys = CacheKeys(
             cachedRuleListsKey: cachedRuleListsKey,
             ruleHashKey: ruleHashKey
         )
-        
+
         do {
             let data = try JSONEncoder().encode(keys)
             try data.write(to: url, options: .atomic)
@@ -447,10 +451,11 @@ public class ABManager: ObservableObject {
             blockedRequestsThisSession = settings.blockedRequestsThisSession
             whitelistedDomains = settings.whitelistedDomains
 
-            logger
-                .info(
-                    "📋 Loaded settings from file: enabled=\(self.isEnabled), blocked=\(self.totalBlockedRequests), whitelist=\(self.whitelistedDomains.count)"
-                )
+            // logger
+            //    .info(
+            //       "📋 Loaded settings from file: enabled=\(self.isEnabled), blocked=\(self/totalBlockedRequests),
+            //       whitelist=\(self.whitelistedDomains.count)"
+            //    )
         } catch {
             logger.error("❌ Failed to load settings from file: \(error)")
             logger.info("📋 Using default settings")

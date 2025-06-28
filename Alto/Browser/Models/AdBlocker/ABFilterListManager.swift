@@ -48,7 +48,7 @@ public final class ABFilterListManager: ObservableObject {
         setupDefaultFilterLists()
         loadFilterListsFromFile()
         loadCacheFromFiles()
-        logger.info("📋 AdBlock storage initialized at: \(self.applicationSupportURL.path)")
+        // logger.info("📋 AdBlock storage initialized at: \(applicationSupportURL.path)")
     }
 
     // MARK: - Setup
@@ -79,7 +79,8 @@ public final class ABFilterListManager: ObservableObject {
         availableFilterLists[index].isEnabled.toggle()
         saveFilterListsToFile()
 
-        logger.info("🔄 Toggled filter list \(filterList.name): \(self.availableFilterLists[index].isEnabled ? "ON" : "OFF")")
+        // logger.info("🔄 Toggled filter list \(filterList.name): \(availableFilterLists[index].isEnabled ? "ON" :
+        // "OFF")")
     }
 
     /// Add a custom filter list
@@ -147,11 +148,13 @@ public final class ABFilterListManager: ObservableObject {
             // Add site-specific whitelist rules at the END (they use ignore-previous-rules)
             let youtubeRules = getYouTubeWhitelistRules()
             let redditRules = getRedditWhitelistRules()
+            let chromeWebStoreRules = getChromeWebStoreWhitelistRules()
             allRules.append(contentsOf: youtubeRules)
             allRules.append(contentsOf: redditRules)
+            allRules.append(contentsOf: chromeWebStoreRules)
             logger
                 .info(
-                    "📝 Added \(youtubeRules.count) YouTube + \(redditRules.count) Reddit whitelist rules (total: \(allRules.count))"
+                    "📝 Added \(youtubeRules.count) YouTube + \(redditRules.count) Reddit + \(chromeWebStoreRules.count) Chrome Web Store whitelist rules at end (total: \(allRules.count))"
                 )
 
             return allRules
@@ -175,11 +178,13 @@ public final class ABFilterListManager: ObservableObject {
         // Add site-specific whitelist rules at the END (they use ignore-previous-rules to override blocking)
         let youtubeRules = getYouTubeWhitelistRules()
         let redditRules = getRedditWhitelistRules()
+        let chromeWebStoreRules = getChromeWebStoreWhitelistRules()
         allRules.append(contentsOf: youtubeRules)
         allRules.append(contentsOf: redditRules)
+        allRules.append(contentsOf: chromeWebStoreRules)
         logger
             .info(
-                "📝 Added \(youtubeRules.count) YouTube + \(redditRules.count) Reddit whitelist rules at end (total: \(allRules.count))"
+                "📝 Added \(youtubeRules.count) YouTube + \(redditRules.count) Reddit + \(chromeWebStoreRules.count) Chrome Web Store whitelist rules at end (total: \(allRules.count))"
             )
 
         logger
@@ -296,7 +301,59 @@ public final class ABFilterListManager: ObservableObject {
         return rules
     }
 
+    private func getChromeWebStoreWhitelistRules() -> [ABContentRule] {
+        logger.info("🏗️ Building Chrome Web Store whitelist rules...")
 
+        let chromeWebStoreWhitelistRules: [(String, [String], String)] = [
+            // Chrome Web Store main domain
+            (".*chromewebstore\\.google\\.com.*", ABResourceType.allWebKitTypes, "Chrome Web Store Main (whitelist)"),
+            (".*chrome\\.google\\.com.*", ABResourceType.allWebKitTypes, "Chrome Main Domain (whitelist)"),
+
+            // Google services that Chrome Web Store depends on
+            (".*gstatic\\.com.*", ABResourceType.allWebKitTypes, "Google Static Assets (whitelist)"),
+            (".*googleapis\\.com.*", ABResourceType.allWebKitTypes, "Google APIs (whitelist)"),
+            (".*googleusercontent\\.com.*", ABResourceType.allWebKitTypes, "Google User Content (whitelist)"),
+
+            // Chrome Web Store specific assets and APIs
+            (
+                ".*chrome\\.google\\.com\\/webstore.*",
+                ABResourceType.allWebKitTypes,
+                "Chrome Web Store Assets (whitelist)"
+            ),
+            (
+                ".*clients2\\.google\\.com.*",
+                ABResourceType.allWebKitTypes,
+                "Chrome Extension Download Service (whitelist)"
+            ),
+
+            // Essential Google infrastructure for web store
+            (".*ssl\\.gstatic\\.com.*", ABResourceType.allWebKitTypes, "Google SSL Static (whitelist)"),
+            (
+                ".*encrypted-tbn[0-9]*\\.gstatic\\.com.*",
+                ABResourceType.allWebKitTypes,
+                "Google Encrypted Images (whitelist)"
+            ),
+
+            // YouTube and other Google services JS/CSS that might be used
+            (".*google\\.com.*\\.js.*", [ABResourceType.script.rawValue], "Google JS Files (whitelist)"),
+            (".*google\\.com.*\\.css.*", [ABResourceType.styleSheet.rawValue], "Google CSS Files (whitelist)"),
+            (".*gstatic\\.com.*\\.js.*", [ABResourceType.script.rawValue], "Google Static JS (whitelist)"),
+            (".*gstatic\\.com.*\\.css.*", [ABResourceType.styleSheet.rawValue], "Google Static CSS (whitelist)")
+        ]
+
+        var rules: [ABContentRule] = []
+        for (pattern, resourceTypes, description) in chromeWebStoreWhitelistRules {
+            let rule = ABContentRule(
+                trigger: ABTrigger(urlFilter: pattern, resourceType: resourceTypes),
+                action: ABAction(type: ABActionType.ignorePreviousRules.rawValue)
+            )
+            rules.append(rule)
+            logger.debug("✅ Chrome Web Store whitelist rule (ignore-previous): \(description)")
+        }
+
+        logger.info("✅ Built \(rules.count) Chrome Web Store whitelist rules")
+        return rules
+    }
 
     private func getBuiltInBlockingRules() -> [ABContentRule] {
         logger.info("🏗️ Building built-in blocking rules...")
@@ -425,7 +482,7 @@ public final class ABFilterListManager: ObservableObject {
             }
 
             if rules.count >= maxParsingRules {
-                logger.warning("⚠️ Reached maximum parsing rules limit (\(self.maxParsingRules))")
+                // logger.warning("⚠️ Reached maximum parsing rules limit (\(self.maxParsingRules))")
                 break
             }
         }
@@ -687,7 +744,7 @@ public final class ABFilterListManager: ObservableObject {
                 }
             }
 
-            logger.info("📋 Loaded \(self.filterListCache.count) cached filter lists from files")
+            // logger.info("📋 Loaded \(filterListCache.count) cached filter lists from files")
         } catch {
             logger.warning("⚠️ Failed to load filter cache directory: \(error)")
         }
@@ -705,7 +762,7 @@ public final class ABFilterListManager: ObservableObject {
                 await MainActor.run {
                     self.availableFilterLists[i].lastUpdated = Date()
                 }
-                logger.info("✅ Updated filter list: \(self.availableFilterLists[i].name)")
+                // logger.info("✅ Updated filter list: \(availableFilterLists[i].name)")
             } catch {
                 logger.error("❌ Failed to update filter list \(self.availableFilterLists[i].name): \(error)")
             }
@@ -776,6 +833,6 @@ public final class ABFilterListManager: ObservableObject {
 
     /// Get all enabled filter lists
     public func getEnabledFilterLists() -> [ABFilterList] {
-        return availableFilterLists.filter { $0.isEnabled }
+        availableFilterLists.filter(\.isEnabled)
     }
 }

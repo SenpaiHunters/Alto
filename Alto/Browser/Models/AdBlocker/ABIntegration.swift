@@ -100,7 +100,7 @@ public final class ABIntegration: NSObject {
     /// Apply already-compiled content rules to a WebView
     private func applyCompiledContentRules(to webView: WKWebView) async {
         let webViewURL = webView.url?.absoluteString ?? "no URL"
-        
+
         // Skip ad blocking for download URLs
         if let url = webView.url, isDownloadURL(url) {
             logger.info("🚀 Skipping ad blocking for download URL: \(webViewURL)")
@@ -132,7 +132,7 @@ public final class ABIntegration: NSObject {
         let pathExtension = url.pathExtension.lowercased()
         let path = url.path.lowercased()
         let lastComponent = url.lastPathComponent.lowercased()
-        
+
         // Common download file extensions
         let downloadExtensions = [
             "zip", "dmg", "pkg", "exe", "msi", "deb", "rpm", "tar", "gz", "bz2", "iso",
@@ -141,24 +141,24 @@ public final class ABIntegration: NSObject {
             "jpg", "jpeg", "png", "gif", "webp", "svg", "bmp", "tiff",
             "apk", "ipa", "appx", "snap", "flatpak"
         ]
-        
+
         // Check file extension
-        if !pathExtension.isEmpty && downloadExtensions.contains(pathExtension) {
+        if !pathExtension.isEmpty, downloadExtensions.contains(pathExtension) {
             return true
         }
-        
+
         // Check path patterns
         let downloadPaths = ["download", "releases", "files", "dist", "assets", "media"]
         if downloadPaths.contains(where: { path.contains($0) }) {
             return true
         }
-        
+
         // Check if it looks like a versioned file or release
-        if lastComponent.contains(where: \.isNumber) && 
-           (lastComponent.contains("-") || lastComponent.contains("_") || lastComponent.contains(".")) {
+        if lastComponent.contains(where: \.isNumber),
+           lastComponent.contains("-") || lastComponent.contains("_") || lastComponent.contains(".") {
             return true
         }
-        
+
         // Check specific domains known for downloads
         if let host = url.host?.lowercased() {
             let downloadDomains = ["releases.", "download.", "files.", "cdn.", "assets."]
@@ -166,7 +166,7 @@ public final class ABIntegration: NSObject {
                 return true
             }
         }
-        
+
         return false
     }
 

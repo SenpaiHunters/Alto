@@ -9,32 +9,68 @@ import UniformTypeIdentifiers
 
 struct SettingsView: View {
     @Bindable var preferences = PreferencesManager.shared
+    @State private var selectedTab: SettingsTab = .general
 
     var body: some View {
-        TabView {
-            // General Settings Tab
-            GeneralSettingsView(preferences: preferences)
-                .tabItem {
-                    Label("General", systemImage: "gear")
+        NavigationSplitView {
+            List(selection: $selectedTab) {
+                // General Settings Tab
+                Section("General") {
+                    NavigationLink(value: SettingsTab.general) {
+                        Label("General", systemImage: "gear")
+                    }
                 }
 
-            // Privacy & Security Tab
-            PrivacySettingsView(preferences: preferences)
-                .tabItem {
-                    Label("Privacy & Security", systemImage: "shield")
+                // Privacy & Security Tab
+                Section("Privacy & Security") {
+                    NavigationLink(value: SettingsTab.privacy) {
+                        Label("Privacy & Security", systemImage: "shield")
+                    }
                 }
 
-            // AdBlock Settings Tab
-            AdBlockSettingsView()
-                .tabItem {
-                    Label("AdBlock", systemImage: "shield.lefthalf.filled")
+                // AdBlock Settings Tab
+                Section("AdBlock") {
+                    NavigationLink(value: SettingsTab.adBlock) {
+                        Label("AdBlock", systemImage: "shield.lefthalf.filled")
+                    }
                 }
 
-            // Downloads Settings Tab
-            DownloadsSettingsView(preferences: preferences)
-                .tabItem {
-                    Label("Downloads", systemImage: "arrow.down.circle")
+                // Downloads Settings Tab
+                Section("Downloads") {
+                    NavigationLink(value: SettingsTab.downloads) {
+                        Label("Downloads", systemImage: "arrow.down.circle")
+                    }
                 }
+
+                // Features Tab
+                Section("Features") {
+                    NavigationLink(value: SettingsTab.extensions) {
+                        Label("Extensions", systemImage: "puzzlepiece.extension")
+                    }
+                }
+            }
+            .navigationTitle("Settings")
+        } detail: {
+            Group {
+                switch selectedTab {
+                case .general:
+                    GeneralSettingsView(preferences: preferences)
+                        .navigationTitle("General")
+                case .privacy:
+                    PrivacySettingsView(preferences: preferences)
+                        .navigationTitle("Privacy & Security")
+                case .adBlock:
+                    AdBlockSettingsView()
+                        .navigationTitle("AdBlock")
+                case .downloads:
+                    DownloadsSettingsView(preferences: preferences)
+                        .navigationTitle("Downloads")
+                case .extensions:
+                    ExtensionSettingsView()
+                        .navigationTitle("Extensions")
+                }
+            }
+            .frame(minWidth: 500, minHeight: 400)
         }
         .frame(minWidth: 600, minHeight: 500)
         .preferredColorScheme(PreferencesManager.shared.colorScheme)
@@ -214,6 +250,18 @@ struct DownloadsSettingsView: View {
     }
 }
 
+// MARK: - SettingsTab
+
+// Implementation is in separate ExtensionSettingsView.swift file
+
 // #Preview {
 //    SettingsView()
 // }
+
+enum SettingsTab: String, CaseIterable {
+    case general
+    case privacy
+    case adBlock
+    case downloads
+    case extensions
+}

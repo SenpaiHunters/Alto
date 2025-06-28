@@ -4,6 +4,8 @@ import SwiftUI
 
 @Observable
 open class AltoWindowManager {
+    /// Shared instance of the window manager
+    @MainActor
     public static let shared = AltoWindowManager()
 
     public var defaultConfig: DefaultWindowConfiguration = .init()
@@ -17,6 +19,7 @@ open class AltoWindowManager {
     public init() {}
 
     @discardableResult
+    @MainActor
     open func createWindow(
         profile: Profile? = nil,
         tabs: [ADKTab] = [],

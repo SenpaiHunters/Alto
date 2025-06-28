@@ -15,7 +15,7 @@ public class AltoWindow: ADKWindow {
 
     public init(rootView: NSView, state: AltoState) {
         super.init(rootView: rootView, state: state, useDefaultProfile: false)
-        print("but why?")
+        // print("but why?")
         /// Window Configurations
         toolbar?.isVisible = false
         titlebarAppearsTransparent = true

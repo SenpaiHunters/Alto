@@ -7,22 +7,25 @@ import WebKit
 /// Because browsers need the ability to open many windows we need a managments system
 /// We use a WindowManager class but this is needed to handling opening windows according to the app lifecycle
 class AppDelegate: NSObject, NSApplicationDelegate {
-
     func applicationDidFinishLaunching(_ notification: Notification) {
-        print("App Launched")
+        // print("App Launched")
 
         // Initialize AdBlocker on app startup
-        print("🛡️ Initializing AdBlocker...")
+        // print("🛡️ Initializing AdBlocker...")
         Task {
             await ABManager.shared.initializeContentBlocking()
-            print("✅ AdBlocker initialized successfully")
+            // print("✅ AdBlocker initialized successfully")
         }
 
+        // Initialize AdBlocker UI Manager
+        _ = ABBlockingManager.shared
+        // print("🛡️ AdBlocker UI Manager initialized")
+
         // Initialize Download Manager
-        print("📥 Initializing Download Manager...")
+        // print("📥 Initializing Download Manager...")
         _ = DownloadManager.shared
         _ = DownloadIntegration.shared
-        print("✅ Download Manager initialized successfully")
+        // print("✅ Download Manager initialized successfully")
 
         // Set up notification listener for new WebViews
         setupAdBlockNotificationListener()
@@ -42,13 +45,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 return
             }
 
-            print("🔌 AdBlock: Setting up blocking for new WebView")
+            // print("🔌 AdBlock: Setting up blocking for new WebView")
             Task {
                 await ABIntegration.shared.setupAdBlocking(for: webView)
-                print("✅ AdBlock: Setup complete for WebView")
+                // print("✅ AdBlock: Setup complete for WebView")
             }
         }
 
-        print("👂 AdBlock: Notification listener registered")
+        // print("👂 AdBlock: Notification listener registered")
     }
 }
